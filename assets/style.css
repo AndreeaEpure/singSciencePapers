@@ -7,7 +7,7 @@
   --accent: #7aa2f7;
   --accent-2: #f7768e;
   --radius: 16px;
-  --max-width: 860px;
+  --max-width: 1150px;
 }
 
 * { box-sizing: border-box; }
@@ -28,17 +28,21 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 a.back { color: var(--text-dim); font-family: system-ui, sans-serif; font-size: 0.9rem; }
 
-.site-header, main, .site-footer {
+.top-bar, .hero, main, .site-footer {
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
-.hero { padding-top: 4rem; padding-bottom: 2.5rem; text-align: center; }
+.top-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding-top: 1.25rem;
+}
 
-.hero h1 {
-  margin: 0;
-  font-size: 3rem;
+.brand {
+  font-size: 1.5rem;
   letter-spacing: -0.02em;
   background: linear-gradient(100deg, var(--accent), var(--accent-2));
   -webkit-background-clip: text;
@@ -46,16 +50,19 @@ a.back { color: var(--text-dim); font-family: system-ui, sans-serif; font-size: 
   color: transparent;
 }
 
-.tagline {
-  color: var(--text);
+.brand:hover { text-decoration: none; }
+
+.brand-tag {
+  color: var(--text-dim);
   font-style: italic;
-  font-size: 1.2rem;
-  margin: 0.5rem 0 1.5rem;
+  font-size: 0.9rem;
 }
+
+.hero { padding-top: 1.5rem; padding-bottom: 1rem; text-align: center; }
 
 .intro {
   color: var(--text-dim);
-  max-width: 560px;
+  max-width: 620px;
   margin: 0 auto;
   font-size: 1rem;
 }
@@ -133,10 +140,21 @@ a.back { color: var(--text-dim); font-family: system-ui, sans-serif; font-size: 
   margin-right: 0.35rem;
 }
 
-/* ---- Song page ---- */
-.song-page h1 {
-  margin: 0.25rem 0 0.75rem;
-  font-size: 1.7rem;
+/* ---- Watch view (YouTube style) ---- */
+.watch-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+@media (max-width: 880px) {
+  .watch-grid { grid-template-columns: 1fr; }
+}
+
+#watch-main h1 {
+  margin: 0.75rem 0;
+  font-size: 1.55rem;
   font-weight: normal;
   background: linear-gradient(100deg, var(--accent), var(--accent-2));
   -webkit-background-clip: text;
@@ -144,19 +162,52 @@ a.back { color: var(--text-dim); font-family: system-ui, sans-serif; font-size: 
   color: transparent;
 }
 
-.song-page .hook {
-  color: var(--text-dim);
-  font-style: italic;
-  font-size: 1.1rem;
-  margin-top: 0;
-}
-
-.song-page video {
+#watch-main video {
   width: 100%;
   border-radius: var(--radius);
-  margin: 0.5rem 0 1rem;
   background: #000;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.side-card {
+  display: flex;
+  gap: 0.7rem;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.side-card:hover { text-decoration: none; }
+.side-card:hover h3 { color: var(--accent); }
+
+.side-card .thumb {
+  flex: 0 0 168px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  margin-bottom: 0;
+}
+
+.side-meta h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: normal;
+  line-height: 1.35;
+}
+
+.side-meta p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.side-note {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.9rem;
+  background: var(--surface);
+  border: 1px dashed var(--surface-2);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
 }
 
 /* YouTube-style collapsible description */

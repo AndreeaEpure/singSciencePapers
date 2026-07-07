@@ -7,24 +7,25 @@
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <header id="home-header" class="site-header hero" hidden>
-    <h1>Paper Songs</h1>
-    <p class="tagline">Fun scientific papers, sung and drawn.</p>
+  <header class="top-bar">
+    <a class="brand" href="." data-home>Paper Songs</a>
+    <span class="brand-tag">fun scientific papers, sung &amp; drawn</span>
+  </header>
+
+  <section id="hero" class="hero" hidden>
     <p class="intro">Every once in a while a research paper tells a story too good to
     stay locked inside equations and figures. Here, each one becomes a song —
     and an animated short to go with it.</p>
-  </header>
-
-  <header id="song-header" class="site-header" hidden>
-    <p><a class="back" href=".">&larr; All songs</a></p>
-  </header>
+  </section>
 
   <main>
     <div id="gallery" class="gallery" hidden>
       <p class="loading">Loading songs&hellip;</p>
     </div>
-    <div id="song" class="song-page" hidden>
-      <p class="loading">Loading&hellip;</p>
+
+    <div id="watch" class="watch-grid" hidden>
+      <div id="watch-main"></div>
+      <aside id="watch-side"></aside>
     </div>
   </main>
 
@@ -33,6 +34,6 @@
   </footer>
 
   <script src="assets/app.js"></script>
-  <script>route();</script>
+  <script>initApp();</script>
 </body>
 </html>
