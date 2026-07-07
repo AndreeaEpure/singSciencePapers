@@ -1,0 +1,10 @@
+.venv/
+
+# Manim render output (final videos are copied into songs/<id>/ instead)
+manim/media/
+__pycache__/
+*.pyc
+
+# OS noise
+Thumbs.db
+.DS_Store
