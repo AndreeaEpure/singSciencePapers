@@ -1,5 +1,17 @@
-// Loads songs/songs.json and renders the gallery (index.html)
-// and individual song pages (song.html?id=<slug>).
+// Single-page router: "?song=<id>" shows a song page, otherwise the gallery.
+
+function route() {
+  const id = new URLSearchParams(location.search).get("song");
+  if (id) {
+    document.getElementById("song-header").hidden = false;
+    document.getElementById("song").hidden = false;
+    renderSongPage(id);
+  } else {
+    document.getElementById("home-header").hidden = false;
+    document.getElementById("gallery").hidden = false;
+    renderGallery();
+  }
+}
 
 async function loadSongs() {
   const res = await fetch("songs/songs.json");
@@ -27,7 +39,7 @@ async function renderGallery() {
       return;
     }
     for (const song of songs) {
-      const card = el("a", { class: "card", href: `song.html?id=${song.id}` });
+      const card = el("a", { class: "card", href: `?song=${song.id}` });
       card.append(el("h2", { text: song.title }));
       if (song.hook) card.append(el("p", { class: "hook", text: song.hook }));
       card.append(el("p", { class: "paper-title", text: song.paper.title }));
@@ -42,10 +54,9 @@ async function renderGallery() {
   }
 }
 
-async function renderSongPage() {
+async function renderSongPage(id) {
   const main = document.getElementById("song");
   try {
-    const id = new URLSearchParams(location.search).get("id");
     const songs = await loadSongs();
     const song = songs.find((s) => s.id === id);
     if (!song) {

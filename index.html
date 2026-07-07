@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <header class="site-header hero">
+  <header id="home-header" class="site-header hero" hidden>
     <h1>Paper Songs</h1>
     <p class="tagline">Fun scientific papers, sung and drawn.</p>
     <p class="intro">Every once in a while a research paper tells a story too good to
@@ -15,9 +15,16 @@
     and an animated short to go with it.</p>
   </header>
 
+  <header id="song-header" class="site-header" hidden>
+    <p><a class="back" href=".">&larr; All songs</a></p>
+  </header>
+
   <main>
-    <div id="gallery" class="gallery">
+    <div id="gallery" class="gallery" hidden>
       <p class="loading">Loading songs&hellip;</p>
+    </div>
+    <div id="song" class="song-page" hidden>
+      <p class="loading">Loading&hellip;</p>
     </div>
   </main>
 
@@ -26,6 +33,6 @@
   </footer>
 
   <script src="assets/app.js"></script>
-  <script>renderGallery();</script>
+  <script>route();</script>
 </body>
 </html>
