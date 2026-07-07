@@ -30,6 +30,9 @@ function goTo(id, push = true) {
   render(id);
 }
 
+// Older cached index.html called route(); keep it working.
+const route = () => initApp();
+
 async function initApp() {
   document.querySelector("[data-home]").addEventListener("click", (e) => {
     e.preventDefault();
