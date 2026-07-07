@@ -87,15 +87,40 @@ a.back { color: var(--text-dim); font-family: system-ui, sans-serif; font-size: 
   text-decoration: none;
 }
 
-.card h2 { margin: 0; font-size: 1.3rem; font-weight: normal; }
-.card .hook { color: var(--text-dim); font-style: italic; margin: 0; font-size: 0.95rem; }
-.card .paper-title {
-  color: var(--text-dim);
-  font-family: system-ui, sans-serif;
-  font-size: 0.8rem;
-  margin: 0;
-}
+.card h2 { margin: 0; font-size: 1.15rem; font-weight: normal; }
+.card .hook { color: var(--text-dim); font-style: italic; margin: 0; font-size: 0.9rem; }
 .card .tags { margin-top: auto; padding-top: 0.5rem; }
+
+.thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 0.35rem;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.25s ease;
+}
+
+.card:hover .thumb img { transform: scale(1.04); }
+
+.duration {
+  position: absolute;
+  bottom: 0.45rem;
+  right: 0.45rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+}
 
 .tag {
   display: inline-block;
@@ -110,8 +135,8 @@ a.back { color: var(--text-dim); font-family: system-ui, sans-serif; font-size: 
 
 /* ---- Song page ---- */
 .song-page h1 {
-  margin: 0.5rem 0 0.25rem;
-  font-size: 2.2rem;
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1.7rem;
   font-weight: normal;
   background: linear-gradient(100deg, var(--accent), var(--accent-2));
   -webkit-background-clip: text;
@@ -129,21 +154,63 @@ a.back { color: var(--text-dim); font-family: system-ui, sans-serif; font-size: 
 .song-page video {
   width: 100%;
   border-radius: var(--radius);
-  margin: 1.5rem 0;
+  margin: 0.5rem 0 1rem;
   background: #000;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
-.story { font-size: 1.05rem; }
-.story p { margin: 0 0 1rem; }
+/* YouTube-style collapsible description */
+.description {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 1rem 1.35rem;
+  font-size: 0.98rem;
+}
+
+.description p { margin: 0 0 0.9rem; }
+.description p:last-child { margin-bottom: 0; }
+
+.description.collapsed {
+  max-height: 8.2rem;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.description.collapsed::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3.5rem;
+  background: linear-gradient(transparent, var(--surface));
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.more-btn {
+  display: block;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.5rem 0.25rem;
+}
+
+.more-btn:hover { color: var(--text); }
+
+.description .hook { font-style: italic; color: var(--text); margin-bottom: 1rem; }
 
 .paper-link {
   color: var(--text-dim);
   font-family: system-ui, sans-serif;
   font-size: 0.9rem;
   border-top: 1px solid var(--surface-2);
-  padding-top: 1.25rem;
-  margin-top: 1.5rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
 }
 
 .lyrics-box {

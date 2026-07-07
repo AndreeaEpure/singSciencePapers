@@ -40,9 +40,14 @@ async function renderGallery() {
     }
     for (const song of songs) {
       const card = el("a", { class: "card", href: `?song=${song.id}` });
+      const thumb = el("div", { class: "thumb" });
+      if (song.thumb) {
+        thumb.append(el("img", { src: `songs/${song.id}/${song.thumb}`, alt: song.title, loading: "lazy" }));
+      }
+      if (song.duration) thumb.append(el("span", { class: "duration", text: song.duration }));
+      card.append(thumb);
       card.append(el("h2", { text: song.title }));
       if (song.hook) card.append(el("p", { class: "hook", text: song.hook }));
-      card.append(el("p", { class: "paper-title", text: song.paper.title }));
       const tags = el("div", { class: "tags" });
       for (const t of song.tags || []) tags.append(el("span", { class: "tag", text: t }));
       card.append(tags);
@@ -66,23 +71,23 @@ async function renderSongPage(id) {
     }
     document.title = song.title;
     main.innerHTML = "";
-    main.append(el("h1", { text: song.title }));
-    if (song.hook) main.append(el("p", { class: "hook", text: song.hook }));
 
+    // Video first, like a watch page.
     const base = `songs/${song.id}/`;
-    if (song.video) main.append(el("video", { controls: "", src: base + song.video, preload: "metadata" }));
+    if (song.video) main.append(el("video", { controls: "", autoplay: "", src: base + song.video, preload: "metadata" }));
+    main.append(el("h1", { text: song.title }));
 
+    // Collapsible description box.
+    const desc = el("div", { class: "description collapsed" });
+    if (song.hook) desc.append(el("p", { class: "hook", text: song.hook }));
     if (song.story) {
-      const story = el("div", { class: "story" });
       for (const para of song.story.split("\n")) {
-        if (para.trim()) story.append(el("p", { text: para }));
+        if (para.trim()) desc.append(el("p", { text: para }));
       }
-      main.append(story);
     }
-
     const paperP = el("p", { class: "paper-link", text: "The paper: " });
     paperP.append(el("a", { href: song.paper.url, target: "_blank", rel: "noopener", text: song.paper.title }));
-    main.append(paperP);
+    desc.append(paperP);
 
     if (song.lyrics) {
       const details = el("details", { class: "lyrics-box" });
@@ -90,7 +95,25 @@ async function renderSongPage(id) {
       const lyricsRes = await fetch(base + song.lyrics);
       const lyricsText = lyricsRes.ok ? await lyricsRes.text() : "(lyrics file not found)";
       details.append(el("div", { class: "lyrics", text: lyricsText }));
-      main.append(details);
+      desc.append(details);
+    }
+    main.append(desc);
+
+    const moreBtn = el("button", { class: "more-btn", text: "...more" });
+    main.append(moreBtn);
+    const toggle = () => {
+      const collapsed = desc.classList.toggle("collapsed");
+      moreBtn.textContent = collapsed ? "...more" : "Show less";
+      if (collapsed) desc.scrollIntoView({ block: "nearest" });
+    };
+    moreBtn.addEventListener("click", toggle);
+    desc.addEventListener("click", (e) => {
+      if (desc.classList.contains("collapsed") && e.target.tagName !== "A") toggle();
+    });
+    // No need to collapse short descriptions.
+    if (desc.scrollHeight <= desc.clientHeight + 16) {
+      desc.classList.remove("collapsed");
+      moreBtn.remove();
     }
   } catch (err) {
     main.innerHTML = "";

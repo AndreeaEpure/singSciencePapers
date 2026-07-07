@@ -41,6 +41,8 @@ manim/scenes/               Manim scene code (render output is git-ignored)
      "paper": { "title": "Paper Title (Authors, Year)", "url": "https://arxiv.org/abs/..." },
      "tags": ["topic"],
      "video": "video.mp4",
+     "thumb": "thumb.jpg",
+     "duration": "4:08",
      "lyrics": "lyrics.txt",
      "story": "A few short paragraphs telling the paper's story in plain fun language. Separate paragraphs with \\n."
    }

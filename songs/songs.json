@@ -10,6 +10,8 @@
       },
       "tags": ["physics", "water", "AI"],
       "video": "video.mp4",
+      "thumb": "thumb.jpg",
+      "duration": "4:08",
       "lyrics": "lyrics.txt",
       "story": "You have poured it, sipped it, and swum in it your whole life — and it turns out water was never just one thing. Physicists suspected for fifty years that liquid water hides two distinct molecular personalities: one crowd packed in tight (high-density water), and one holding itself open like a country road (low-density water), endlessly switching back and forth.\nThe proof finally came from an unexpected witness. Researchers handed an AI millions of unlabeled snapshots of water molecules — no hints, no answer sheet — and it found the two hidden neighborhoods on its own.\nThat quiet double life explains one of nature's best tricks: why water gets denser only down to 4 °C and then pushes back, which is why ice floats, lakes freeze from the top down, and life under the surface survives winter. One water, two souls."
     }
