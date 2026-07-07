@@ -12,6 +12,10 @@
 
 * { box-sizing: border-box; }
 
+/* The router toggles views via the hidden attribute; it must always win,
+   even over display rules like .gallery { display: grid }. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);
