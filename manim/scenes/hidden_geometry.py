@@ -199,6 +199,35 @@ def sparkle(pos, size=0.09, color=WHITE):
     return VGroup(h, v, core).move_to(pos)
 
 
+def soft_blob(pos, radius, color, peak=0.05, layers=26):
+    """A soft radial glow faked with many stacked concentric fills (no stroke).
+    Needs a lot of thin layers with a smooth falloff, otherwise the discrete
+    circles read as concentric 'target' bands rather than a glow. Used for
+    deep-space nebulae and bloom halos so frames have colored depth instead of
+    flat black."""
+    g = VGroup()
+    for i in range(layers):
+        frac = i / (layers - 1)             # 0 (outer) .. 1 (inner)
+        r = radius * (1 - 0.92 * frac)      # large (dim) -> small (bright)
+        op = peak * (frac ** 1.7)           # smooth ramp, ~0 at the rim
+        if op < 0.0015:
+            continue
+        g.add(Circle(radius=r, color=color, fill_opacity=op,
+                     stroke_width=0).move_to(pos))
+    return g
+
+
+def curve_glow(curve, color, widths=(18, 11, 6), opacity=0.05):
+    """Stacked wide, faint copies of a curve to give its stroke a luminous
+    bloom. Returns a VGroup meant to sit *behind* the crisp curve."""
+    g = VGroup()
+    for w in widths:
+        c = curve.copy().set_stroke(color=color, width=w, opacity=opacity)
+        c.set_fill(opacity=0)
+        g.add(c)
+    return g
+
+
 def add_drift(mob, amp=0.06, speed=1.2):
     mob.drift_t = random.uniform(0, TAU)
     mob.drift_prev = np.zeros(3)
@@ -290,19 +319,39 @@ class HiddenGeometry(Scene):
         self.closing()               # 2:25 - 2:32   citation
 
     def add_ambient_background(self):
-        """Faint lattice specks drifting through the whole video, with a
-        handful of dim connecting threads so it reads as a diffuse network
-        rather than random noise."""
-        ambient = VGroup()
+        """A layered deep-space backdrop present in every frame: slow drifting
+        colored nebulae for depth, a parallax dust field (nearer motes bigger,
+        brighter and faster), and dim threads linking nearby motes so it reads
+        as a diffuse network rather than flat black or random noise."""
+        # 1. Nebulae -- big soft colored glows so no frame is pure black.
+        nebulae = VGroup()
+        for pos, r, col in (
+            (np.array([-4.6, 2.1, 0]), 3.6, GEO_A),
+            (np.array([4.9, -1.7, 0]), 4.0, GEO_B),
+            (np.array([2.2, 2.9, 0]), 2.5, GEO_B),
+            (np.array([-3.4, -2.7, 0]), 2.8, ATOM_A),
+        ):
+            blob = soft_blob(pos, r, col, peak=0.05)
+            blob.drift = np.array([random.uniform(-0.02, 0.02),
+                                   random.uniform(-0.012, 0.012), 0])
+
+            def bupd(m, dt):
+                m.shift(m.drift * dt)
+
+            blob.add_updater(bupd)
+            nebulae.add(blob)
+
+        # 2. Parallax dust field.
+        dust = VGroup()
         specks = []
-        for _ in range(22):
-            dot = Circle(radius=random.uniform(0.025, 0.07),
+        for _ in range(38):
+            depth = random.random()          # 0 far .. 1 near
+            dot = Circle(radius=0.018 + 0.06 * depth,
                         color=random.choice([GEO_A, GEO_B, CHALK]),
-                        fill_opacity=random.uniform(0.07, 0.15),
-                        stroke_width=0)
+                        fill_opacity=0.05 + 0.13 * depth, stroke_width=0)
             dot.move_to([random.uniform(-7, 7), random.uniform(-4.2, 4.2), 0])
             dot.drift = np.array([random.uniform(-0.05, 0.05),
-                                  random.uniform(0.02, 0.08), 0])
+                                  0.02 + 0.08 * depth, 0])
 
             def upd(m, dt):
                 m.shift(m.drift * dt)
@@ -310,21 +359,22 @@ class HiddenGeometry(Scene):
                     m.shift(DOWN * 9.2)
 
             dot.add_updater(upd)
-            ambient.add(dot)
+            dust.add(dot)
             specks.append(dot)
 
+        # 3. Threads between nearby motes.
         threads = VGroup()
         for a, b in zip(specks, specks[1:]):
-            if np.linalg.norm(a.get_center() - b.get_center()) < 3.2:
+            if np.linalg.norm(a.get_center() - b.get_center()) < 3.0:
                 line = Line(a.get_center(), b.get_center(), stroke_width=0.6,
-                           color=BOND_COLOR, stroke_opacity=0.25)
+                           color=BOND_COLOR, stroke_opacity=0.22)
 
                 def thread_upd(m, dt, a=a, b=b):
                     m.put_start_and_end_on(a.get_center(), b.get_center())
 
                 line.add_updater(thread_upd)
                 threads.add(line)
-        self.add(threads, ambient)
+        self.add(nebulae, threads, dust)
 
     # ----------------------------------------------------------------
     def title_and_secret(self):
@@ -531,7 +581,11 @@ class HiddenGeometry(Scene):
             Line([x, -1.55, 0], [x, -1.45, 0], stroke_width=1, color=GREY_C)
             for x in np.arange(-4, 4.1, 0.5)
         ])
+        cglow = curve_glow(curve, GEO_A)
         ball = Dot(color=ELECTRON, radius=0.1)
+        ball_glow = Circle(radius=0.22, color=ELECTRON, fill_opacity=0.22,
+                           stroke_width=0)
+        ball_glow.add_updater(lambda m: m.move_to(ball))
         trail = trail_group(ball, color=ELECTRON, segments=16)
         x_tracker = ValueTracker(-3.6)
 
@@ -544,8 +598,9 @@ class HiddenGeometry(Scene):
         # particle, now with ground beneath it.
         dtrail.clear_updaters()
         cap = self.swap(cap, cap2, FadeOut(drifter), FadeOut(dtrail),
-                        FadeIn(ref_grid), FadeIn(area), FadeIn(ticks),
-                        Create(curve), FadeIn(ball), FadeIn(trail), run_time=1.3)
+                        FadeIn(ref_grid), FadeIn(area), FadeIn(cglow),
+                        Create(curve), FadeIn(ticks), FadeIn(ball_glow),
+                        FadeIn(ball), FadeIn(trail), run_time=1.3)
         self.play_t(x_tracker.animate.set_value(-1.8), run_time=1.5,
                     rate_func=there_and_back)
 
@@ -578,8 +633,10 @@ class HiddenGeometry(Scene):
         self.wait_until(79.5)
         ball.clear_updaters()
         trail.clear_updaters()
-        self.play_t(FadeOut(ball), FadeOut(trail), FadeOut(area),
-                    FadeOut(ticks), FadeOut(ref_grid), run_time=1.3)
+        ball_glow.clear_updaters()
+        self.play_t(FadeOut(ball), FadeOut(ball_glow), FadeOut(trail),
+                    FadeOut(area), FadeOut(ticks), FadeOut(ref_grid),
+                    FadeOut(cglow), run_time=1.3)
         self.hidden_curve_f = f
         # Hand the real curve + caption to the theory scene: it morphs into a
         # chalk rumour there ("once it lived only in theory").
@@ -647,6 +704,7 @@ class HiddenGeometry(Scene):
                                     (1.3, 0.5, 0.6), (2.8, -0.5, 0.5)],
                                    color=GEO_A, stroke_width=4)
         solid_curve.shift(DOWN * 1.6)
+        cglow2 = curve_glow(solid_curve, GEO_A)
         ghost_target = ghost.copy().shift(DOWN * 1.6)
         data_pts = VGroup(*[
             Dot(solid_curve.point_from_proportion(p), color=ELECTRON,
@@ -658,7 +716,8 @@ class HiddenGeometry(Scene):
         cap = self.swap(cap, cap3, Transform(ghost, ghost_target),
                         FadeOut(board), FadeOut(tensor), FadeOut(labels),
                         FadeOut(dust), run_time=1.5)
-        self.play_t(Transform(ghost, solid_curve), FadeIn(data_pts, scale=1.5),
+        self.play_t(Transform(ghost, solid_curve), FadeIn(cglow2),
+                    FadeIn(data_pts, scale=1.5),
                     Broadcast(pulse, focal_point=solid_curve.get_center()),
                     run_time=2.5)
 
@@ -680,6 +739,9 @@ class HiddenGeometry(Scene):
         cap5 = Text("there are shapes that tell particles where to go.",
                    font_size=27).to_edge(UP)
         ball2 = Dot(color=ELECTRON, radius=0.1)
+        ball2_glow = Circle(radius=0.22, color=ELECTRON, fill_opacity=0.22,
+                            stroke_width=0)
+        ball2_glow.add_updater(lambda m: m.move_to(ball2))
         trail2 = trail_group(ball2, color=ELECTRON, segments=16)
         x2 = ValueTracker(-3.6)
 
@@ -688,17 +750,20 @@ class HiddenGeometry(Scene):
             m.move_to([x, self.hidden_curve_f(x) - 1.6, 0])
 
         ball2.add_updater(ball2_upd)
-        cap = self.swap(cap, cap5, FadeIn(ball2), FadeIn(trail2), run_time=1)
+        cap = self.swap(cap, cap5, FadeIn(ball2_glow), FadeIn(ball2),
+                        FadeIn(trail2), run_time=1)
         self.play_t(x2.animate.set_value(3.6), run_time=4.0, rate_func=linear)
 
         self.wait_until(111.0)
         orbit.clear_updaters()
         ball2.clear_updaters()
+        ball2_glow.clear_updaters()
         trail2.clear_updaters()
         b_arrow.clear_updaters()
-        self.play_t(FadeOut(ghost), FadeOut(data_pts), FadeOut(orbit),
-                    FadeOut(b_arrow), FadeOut(b_label), FadeOut(ball2),
-                    FadeOut(trail2), run_time=2)
+        self.play_t(FadeOut(ghost), FadeOut(cglow2), FadeOut(data_pts),
+                    FadeOut(orbit), FadeOut(b_arrow), FadeOut(b_label),
+                    FadeOut(ball2), FadeOut(ball2_glow), FadeOut(trail2),
+                    run_time=2)
         self._cap = cap   # crossfade into "So maybe spacetime isn't just..."
 
     # ----------------------------------------------------------------
@@ -728,6 +793,8 @@ class HiddenGeometry(Scene):
 
         funnel, _ = landscape([(0, -1.6, 1.6)], x_range=(-4, 4),
                               color=GEO_A, stroke_width=4)
+        funnel_glow = curve_glow(funnel, GEO_A)
+        hole_halo = soft_blob(DOWN * 1.6, 0.8, GEO_B, peak=0.11)
         ring_glow = Circle(radius=0.24, color=GEO_B, stroke_width=8,
                           stroke_opacity=0.4).move_to(DOWN * 1.6)
         hole = Circle(radius=0.12, color=BLACK, fill_opacity=1,
@@ -746,7 +813,8 @@ class HiddenGeometry(Scene):
                                                  np.sin(m.oth * 2.3), 0]))
 
         orbiter.add_updater(orb_upd)
-        self.play_t(Create(funnel), FadeIn(ring_glow), FadeIn(hole, scale=0.3),
+        self.play_t(Create(funnel), FadeIn(funnel_glow), FadeIn(hole_halo),
+                    FadeIn(ring_glow), FadeIn(hole, scale=0.3),
                     FadeIn(orbiter), FadeIn(otrail), run_time=2)
 
         self.wait_until(119.0)
@@ -755,9 +823,10 @@ class HiddenGeometry(Scene):
         ring_glow.clear_updaters()
         orbiter.clear_updaters()
         otrail.clear_updaters()
-        cap = self.swap(cap, cap2, FadeOut(funnel), FadeOut(hole),
-                        FadeOut(ring_glow), FadeOut(orbiter), FadeOut(otrail),
-                        FadeOut(lattice), run_time=1.5)
+        cap = self.swap(cap, cap2, FadeOut(funnel), FadeOut(funnel_glow),
+                        FadeOut(hole_halo), FadeOut(hole), FadeOut(ring_glow),
+                        FadeOut(orbiter), FadeOut(otrail), FadeOut(lattice),
+                        run_time=1.5)
 
         icons = VGroup()
         minis = VGroup()
@@ -795,11 +864,14 @@ class HiddenGeometry(Scene):
         big, _ = landscape([(0, -1.3, 1.4)], x_range=(-2.6, 2.6),
                            color=GEO_A, stroke_width=3)
         big.move_to(RIGHT * 3 + DOWN * 1.3)
+        small_glow = curve_glow(small, GEO_B, widths=(12, 7))
+        big_glow = curve_glow(big, GEO_A, widths=(14, 8))
         link = DashedLine(small.get_right(), big.get_left(), stroke_width=1.5,
                           color=CHALK, stroke_opacity=0.4)
         cap = self.swap(cap, cap4, FadeOut(icons), FadeOut(minis), FadeOut(tags),
                         FadeOut(glows), run_time=1.3)
-        self.play_t(Create(small), Create(big), Create(link), run_time=1.7)
+        self.play_t(Create(small), Create(big), FadeIn(small_glow),
+                    FadeIn(big_glow), Create(link), run_time=1.7)
 
         self.wait_until(139.0)
         cap5 = Text("and always more curved than we imagine.", font_size=27,
@@ -814,6 +886,7 @@ class HiddenGeometry(Scene):
         self.play_t(FadeOut(cap),
                     small.animate.move_to(ORIGIN).scale(0.2).set_opacity(0),
                     big.animate.move_to(ORIGIN).scale(0.2).set_opacity(0),
+                    FadeOut(small_glow), FadeOut(big_glow),
                     FadeOut(link), FadeOut(stars), FadeOut(sparkles),
                     run_time=1.5)
 
