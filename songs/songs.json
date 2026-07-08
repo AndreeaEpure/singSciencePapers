@@ -1,6 +1,21 @@
 {
   "songs": [
     {
+      "id": "hidden-geometry",
+      "title": "Hidden Geometry",
+      "hook": "A property of electrons stayed purely theoretical for twenty years. Then someone found it hiding in ordinary materials.",
+      "paper": {
+        "title": "The quantum metric of electrons with spin-momentum locking (Sala, Mercaldo, Domi, Gariglio, Cuoco, Ortix & Caviglia, 2025, Science)",
+        "url": "https://www.science.org/doi/10.1126/science.adq3255"
+      },
+      "tags": ["physics", "quantum geometry", "condensed matter"],
+      "video": "video.mp4",
+      "thumb": "thumb.jpg",
+      "duration": "2:34",
+      "lyrics": "lyrics.txt",
+      "story": "Einstein taught us that space itself can curve. What's less known is that something similar happens on a much smaller stage: the quantum states an electron can occupy inside a crystal have their own geometry, called the quantum metric. It was predicted about twenty years ago and almost impossible to measure directly — until now.\nA team at the University of Geneva found a way in. Wherever an electron's spin gets locked to its direction of motion, a trait common at the surface of many everyday materials, that locking generates a measurable quantum metric. They caught it with a clever electrical trick: nonlinear magnetoresistance, a bend in electrical resistance that only this hidden geometry can explain.\nThe surprise is where they found it. Not in some exotic, one-of-a-kind crystal, but in ordinary oxide interfaces and semiconductors — the everyday stuff circuits are made of. A sliver of curved space, hiding in plain sight."
+    },
+    {
       "id": "one-water-two-souls",
       "title": "One Water, Two Souls",
       "hook": "The most ordinary thing on Earth has been living a double life.",
