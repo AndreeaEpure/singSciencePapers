@@ -263,6 +263,19 @@ class HiddenGeometry(Scene):
         self.play_t(FadeOut(old), FadeIn(new), *extra_anims, run_time=run_time)
         return new
 
+    def enter_cap(self, new_cap, *extra_anims, run_time=1.5):
+        """Open a section's first caption. If the previous section handed one
+        off via self._cap, crossfade from it (so scenes flow into each other
+        instead of cutting to black); otherwise write it fresh."""
+        old = getattr(self, "_cap", None)
+        if old is not None:
+            self.play_t(FadeOut(old, shift=UP * 0.2), FadeIn(new_cap, shift=UP * 0.2),
+                        *extra_anims, run_time=run_time)
+            self._cap = None
+        else:
+            self.play_t(Write(new_cap), *extra_anims, run_time=run_time)
+        return new_cap
+
     # ----------------------------------------------------------------
     def construct(self):
         if SONG_MP3.exists():
@@ -383,15 +396,30 @@ class HiddenGeometry(Scene):
                           run_time=2)
         self.wait_until(32.3)
         halo.clear_updaters()
-        self.play_t(FadeOut(grid), FadeOut(area), FadeOut(marble),
-                    FadeOut(line1), FadeOut(title), FadeOut(halo), run_time=1.5)
+        # Keep the hidden valley-curve, its shaded area and the caption alive:
+        # the next line is "a geometry folded inside matter," so rather than
+        # cut to black we fold this very curve into a crystal lattice.
+        self.play_t(FadeOut(marble), FadeOut(title), FadeOut(halo),
+                    grid.animate.set_opacity(0.6), run_time=1.0)
+        self.bridge_curve = grid
+        self.bridge_area = area
+        self.bridge_cap = line1
 
     # ----------------------------------------------------------------
     def folded_in_matter(self):
         cap = Text("A geometry folded inside matter,", font_size=30).to_edge(UP)
         lattice = crystal_lattice().scale(1.1)
+        if hasattr(self, "bridge_curve"):
+            # The intro's hidden curve folds up into a crystal, the caption
+            # rises from the floor to the ceiling, the shading dissolves.
+            self.play_t(FadeOut(self.bridge_cap, shift=UP * 1.8),
+                        FadeIn(cap, shift=UP * 0.3),
+                        ReplacementTransform(self.bridge_curve, lattice),
+                        FadeOut(self.bridge_area), run_time=2.5)
+            del self.bridge_curve
+        else:
+            self.play_t(Write(cap), FadeIn(lattice, scale=0.8), run_time=2.5)
         add_drift(lattice, amp=0.03)
-        self.play_t(Write(cap), FadeIn(lattice, scale=0.8), run_time=2.5)
 
         self.wait_until(37.1)
         cap2 = Text("woven through lattices and charges,", font_size=30).to_edge(UP)
@@ -469,17 +497,30 @@ class HiddenGeometry(Scene):
         self.wait_until(58.1)
         lattice.clear_updaters()
         gap_visual.clear_updaters()
-        self.play_t(FadeOut(cap), FadeOut(lattice), FadeOut(gap_visual),
-                    FadeOut(electron), FadeOut(electron_glow), FadeOut(path),
-                    run_time=1.5)
+        self.play_t(FadeOut(lattice), FadeOut(gap_visual), FadeOut(electron),
+                    FadeOut(electron_glow), FadeOut(path), run_time=1.5)
+        self._cap = cap   # crossfade into the next line, don't cut
 
     # ----------------------------------------------------------------
     def hills_and_valleys(self):
         cap = Text("They don't just move forward—", font_size=30).to_edge(UP)
-        self.play_t(Write(cap), run_time=1.5)
+        # A lone electron drifts in a straight line -- for this one beat it
+        # really is "just moving forward"; the landscape rises under it next.
+        drifter = Dot(color=ELECTRON, radius=0.1).move_to(LEFT * 5.5 + UP * 0.2)
+        dtrail = trail_group(drifter, color=ELECTRON, segments=14)
+        cap = self.enter_cap(cap, FadeIn(drifter), FadeIn(dtrail), run_time=1.5)
+        self.play_t(drifter.animate.move_to(LEFT * 1.5 + UP * 0.2), run_time=1.0,
+                    rate_func=linear)
 
         self.wait_until(63.0)
         cap2 = Text("they curve, they hesitate,", font_size=30).to_edge(UP)
+        # A faint reference grid sits behind the landscape -- "not quite space,
+        # but feels like it."
+        ref_grid = NumberPlane(
+            x_range=[-6, 6, 1.5], y_range=[-2.4, 2.4, 1.2],
+            background_line_style={"stroke_color": GREY_D, "stroke_width": 1,
+                                   "stroke_opacity": 0.16},
+            axis_config={"stroke_opacity": 0})
         curve, f = landscape([(-2.6, 0.7, 0.7), (-0.5, -0.9, 0.6),
                               (1.3, 0.5, 0.6), (2.8, -0.5, 0.5)])
         area = Polygon(*[[x, y, 0] for x, y in
@@ -499,8 +540,12 @@ class HiddenGeometry(Scene):
             m.move_to([x, f(x), 0])
 
         ball.add_updater(ball_upd)
-        cap = self.swap(cap, cap2, FadeIn(area), FadeIn(ticks), Create(curve),
-                        FadeIn(ball), FadeIn(trail), run_time=1.3)
+        # The drifting electron becomes the ball on the landscape -- same
+        # particle, now with ground beneath it.
+        dtrail.clear_updaters()
+        cap = self.swap(cap, cap2, FadeOut(drifter), FadeOut(dtrail),
+                        FadeIn(ref_grid), FadeIn(area), FadeIn(ticks),
+                        Create(curve), FadeIn(ball), FadeIn(trail), run_time=1.3)
         self.play_t(x_tracker.animate.set_value(-1.8), run_time=1.5,
                     rate_func=there_and_back)
 
@@ -531,9 +576,15 @@ class HiddenGeometry(Scene):
         trail.clear_updaters()
         cap = self.swap(cap, cap4, FadeOut(ball_b), run_time=1.5)
         self.wait_until(79.5)
-        self.play_t(FadeOut(cap), FadeOut(curve), FadeOut(ball), FadeOut(trail),
-                    FadeOut(area), FadeOut(ticks), run_time=1.5)
+        ball.clear_updaters()
+        trail.clear_updaters()
+        self.play_t(FadeOut(ball), FadeOut(trail), FadeOut(area),
+                    FadeOut(ticks), FadeOut(ref_grid), run_time=1.3)
         self.hidden_curve_f = f
+        # Hand the real curve + caption to the theory scene: it morphs into a
+        # chalk rumour there ("once it lived only in theory").
+        self.hills_curve = curve
+        self._cap = cap
 
     # ----------------------------------------------------------------
     def theory_to_measured(self):
@@ -566,8 +617,19 @@ class HiddenGeometry(Scene):
                                random.uniform(-1.0, 1.0), 0]))
             for _ in range(14)
         ])
-        self.play_t(Write(cap), Create(ghost), FadeIn(board), FadeIn(tensor),
-                    FadeIn(labels), FadeIn(dust), run_time=2.5)
+        if hasattr(self, "hills_curve"):
+            # The solid, measured curve breaks apart into dashed chalk -- the
+            # story rewinds to when this was only a prediction.
+            self.play_t(FadeOut(self._cap, shift=UP * 0.2),
+                        FadeIn(cap, shift=UP * 0.2),
+                        ReplacementTransform(self.hills_curve, ghost),
+                        FadeIn(board), FadeIn(tensor), FadeIn(labels),
+                        FadeIn(dust), run_time=2.5)
+            self._cap = None
+            del self.hills_curve
+        else:
+            self.play_t(Write(cap), Create(ghost), FadeIn(board), FadeIn(tensor),
+                        FadeIn(labels), FadeIn(dust), run_time=2.5)
 
         self.wait_until(87.0)
         cap2 = Text("a prediction waiting for courage.", font_size=28,
@@ -627,23 +689,24 @@ class HiddenGeometry(Scene):
 
         ball2.add_updater(ball2_upd)
         cap = self.swap(cap, cap5, FadeIn(ball2), FadeIn(trail2), run_time=1)
-        self.play_t(x2.animate.set_value(3.6), run_time=4.5, rate_func=linear)
+        self.play_t(x2.animate.set_value(3.6), run_time=4.0, rate_func=linear)
 
         self.wait_until(111.0)
         orbit.clear_updaters()
         ball2.clear_updaters()
         trail2.clear_updaters()
         b_arrow.clear_updaters()
-        self.play_t(FadeOut(cap), FadeOut(ghost), FadeOut(data_pts),
-                    FadeOut(orbit), FadeOut(b_arrow), FadeOut(b_label),
-                    FadeOut(ball2), FadeOut(trail2), run_time=2)
+        self.play_t(FadeOut(ghost), FadeOut(data_pts), FadeOut(orbit),
+                    FadeOut(b_arrow), FadeOut(b_label), FadeOut(ball2),
+                    FadeOut(trail2), run_time=2)
+        self._cap = cap   # crossfade into "So maybe spacetime isn't just..."
 
     # ----------------------------------------------------------------
     def zoom_to_spacetime(self):
         cap = Text("So maybe spacetime isn't just out there,\nstretching between stars and black holes.",
                    font_size=27, line_spacing=1.2).to_edge(UP)
         lattice = crystal_lattice(rows=3, cols=5, spacing=0.6).scale(0.8)
-        self.play_t(Write(cap), FadeIn(lattice, scale=0.6), run_time=2)
+        cap = self.enter_cap(cap, FadeIn(lattice, scale=0.6), run_time=2)
 
         stars = VGroup(*[
             Dot([random.uniform(-6.5, 6.5), random.uniform(-3.5, 3.5), 0],
@@ -661,7 +724,7 @@ class HiddenGeometry(Scene):
             add_twinkle(s, speed=random.uniform(0.8, 1.4))
         self.play_t(lattice.animate.scale(0.3).set_opacity(0.5),
                     stars.animate.set_opacity(0.7),
-                    sparkles.animate.set_opacity(0.8), run_time=3)
+                    sparkles.animate.set_opacity(0.8), run_time=2)
 
         funnel, _ = landscape([(0, -1.6, 1.6)], x_range=(-4, 4),
                               color=GEO_A, stroke_width=4)
@@ -670,15 +733,31 @@ class HiddenGeometry(Scene):
         hole = Circle(radius=0.12, color=BLACK, fill_opacity=1,
                      stroke_color=GEO_B, stroke_width=2).move_to(DOWN * 1.6)
         add_breathe(ring_glow, amp=0.12, speed=1.1)
+        # A mote spirals the well, dragging a curved tail -- the curvature is
+        # doing something, not just sitting there.
+        orbiter = Dot(color=ELECTRON, radius=0.05)
+        otrail = trail_group(orbiter, color=GEO_B, segments=20, radius=0.03)
+        orbiter.oth = 0.0
+
+        def orb_upd(m, dt):
+            m.oth += dt * 1.7
+            r = max(0.24, 0.75 - 0.05 * m.oth)
+            m.move_to(DOWN * 1.6 + r * np.array([np.cos(m.oth * 2.3),
+                                                 np.sin(m.oth * 2.3), 0]))
+
+        orbiter.add_updater(orb_upd)
         self.play_t(Create(funnel), FadeIn(ring_glow), FadeIn(hole, scale=0.3),
-                    run_time=2)
+                    FadeIn(orbiter), FadeIn(otrail), run_time=2)
 
         self.wait_until(119.0)
         cap2 = Text("Maybe it's everywhere—hidden in the ordinary,",
                    font_size=27).to_edge(UP)
         ring_glow.clear_updaters()
+        orbiter.clear_updaters()
+        otrail.clear_updaters()
         cap = self.swap(cap, cap2, FadeOut(funnel), FadeOut(hole),
-                        FadeOut(ring_glow), FadeOut(lattice), run_time=1.5)
+                        FadeOut(ring_glow), FadeOut(orbiter), FadeOut(otrail),
+                        FadeOut(lattice), run_time=1.5)
 
         icons = VGroup()
         minis = VGroup()
@@ -730,8 +809,13 @@ class HiddenGeometry(Scene):
                     big.animate.set_stroke(width=5, color=GEO_A),
                     link.animate.set_stroke(opacity=0.8), run_time=1.8)
         self.wait_until(144.5)
-        self.play_t(FadeOut(cap), FadeOut(small), FadeOut(big), FadeOut(link),
-                    FadeOut(stars), FadeOut(sparkles), run_time=1.5)
+        # The two scales of curvature converge to a single point -- the title
+        # of the piece rises out of exactly where they meet.
+        self.play_t(FadeOut(cap),
+                    small.animate.move_to(ORIGIN).scale(0.2).set_opacity(0),
+                    big.animate.move_to(ORIGIN).scale(0.2).set_opacity(0),
+                    FadeOut(link), FadeOut(stars), FadeOut(sparkles),
+                    run_time=1.5)
 
     # ----------------------------------------------------------------
     def closing(self):
@@ -741,7 +825,8 @@ class HiddenGeometry(Scene):
                    font_size=20, color=CHALK).next_to(title, DOWN, buff=0.5)
         cite2 = Text("Science 389, 822-825 (2025) · University of Geneva",
                     font_size=18, color=GREY_C).next_to(cite, DOWN, buff=0.2)
-        self.play_t(FadeIn(backdrop), Write(title), run_time=1.5)
+        # Grows from the convergence point of the two landscapes.
+        self.play_t(FadeIn(backdrop), FadeIn(title, scale=0.3), run_time=1.5)
         self.play_t(FadeIn(cite, shift=UP * 0.2), FadeIn(cite2, shift=UP * 0.2),
                    run_time=1.5)
         self.wait_until(152.0)
