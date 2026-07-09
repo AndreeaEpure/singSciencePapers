@@ -100,35 +100,45 @@ def dashed(mobject, num_dashes=24, color=None):
 
 
 def spin_orbit_group(center=ORIGIN, radius=1.4, color=GEO_B):
-    """A circular momentum-space orbit with a spin arrow locked tangential
-    to the electron's momentum direction as it goes around -- the paper's
-    central mechanism. A fading comet trail follows the electron so the
-    continuous rotation reads clearly."""
+    """A momentum-space orbit that makes spin-momentum locking explicit -- the
+    paper's central mechanism. A momentum arrow stays tangent to the orbit
+    while a spin arrow stays locked perpendicular to it, so the two rotate
+    together, rigidly at 90 degrees, as the electron circles."""
     ring = Circle(radius=radius, color=GREY_C, stroke_width=1.5).move_to(center)
     ring_glow = Circle(radius=radius, color=color, stroke_width=5,
                        stroke_opacity=0.15).move_to(center)
     theta = ValueTracker(0)
 
     electron = Dot(color=ELECTRON, radius=0.09)
+    mom_arrow = Arrow(ORIGIN, RIGHT * 0.6, buff=0, stroke_width=4,
+                      color=color, max_tip_length_to_length_ratio=0.35)
     spin_arrow = Arrow(ORIGIN, RIGHT * 0.5, buff=0, stroke_width=4,
-                       color=color, max_tip_length_to_length_ratio=0.4)
+                       color=ATOM_A, max_tip_length_to_length_ratio=0.42)
     trail = trail_group(electron, color=ELECTRON, segments=14)
 
     def upd_electron(m):
         t = theta.get_value()
         m.move_to(center + radius * np.array([np.cos(t), np.sin(t), 0]))
 
+    def upd_mom(m):
+        t = theta.get_value()
+        pos = center + radius * np.array([np.cos(t), np.sin(t), 0])
+        tangent = np.array([-np.sin(t), np.cos(t), 0])   # momentum direction
+        m.put_start_and_end_on(pos, pos + 0.6 * tangent)
+
     def upd_spin(m):
         t = theta.get_value()
         pos = center + radius * np.array([np.cos(t), np.sin(t), 0])
-        tangent = np.array([-np.sin(t), np.cos(t), 0])
-        m.put_start_and_end_on(pos, pos + 0.55 * tangent)
+        radial = np.array([np.cos(t), np.sin(t), 0])     # spin locked at 90 deg
+        m.put_start_and_end_on(pos, pos + 0.5 * radial)
 
     electron.add_updater(upd_electron)
+    mom_arrow.add_updater(upd_mom)
     spin_arrow.add_updater(upd_spin)
     upd_electron(electron)
+    upd_mom(mom_arrow)
     upd_spin(spin_arrow)
-    return VGroup(ring_glow, ring, trail, electron, spin_arrow), theta
+    return VGroup(ring_glow, ring, trail, electron, mom_arrow, spin_arrow), theta
 
 
 def trail_group(mob, color=ELECTRON, segments=14, radius=0.045):
@@ -189,6 +199,38 @@ def mini_crystal(scale=0.4):
     ])
     center_dot = Dot(radius=0.04, color=ATOM_A, fill_opacity=0.7)
     return VGroup(hexagon, dots, center_dot).scale(scale)
+
+
+def nlmr_panel(pos=ORIGIN, width=2.9, height=1.95):
+    """A compact instrument readout of nonlinear magnetoresistance: resistance
+    R plotted against drive current I. The trace is deliberately asymmetric --
+    an ohmic straight line plus a nonlinear bend -- and flipping the field B
+    mirrors the bend. That field-dependent nonlinearity is the fingerprint the
+    team used to catch the otherwise-invisible quantum metric.
+    Returns (panel, make_trace) where make_trace(sign) builds the R(I) curve."""
+    frame = RoundedRectangle(width=width, height=height, corner_radius=0.08,
+                             stroke_color=CHALK, stroke_width=1.5,
+                             stroke_opacity=0.5, fill_color="#0b0f17",
+                             fill_opacity=0.65).move_to(pos)
+    hw, hh = width * 0.36, height * 0.33
+    x_axis = Arrow(pos + LEFT * hw * 1.15, pos + RIGHT * hw * 1.2, buff=0,
+                   stroke_width=2, color=GREY_B,
+                   max_tip_length_to_length_ratio=0.05)
+    y_axis = Arrow(pos + DOWN * hh * 1.15, pos + UP * hh * 1.2, buff=0,
+                   stroke_width=2, color=GREY_B,
+                   max_tip_length_to_length_ratio=0.05)
+    x_lab = Text("I", font_size=17, color=GREY_B).next_to(x_axis, RIGHT, buff=0.06)
+    y_lab = Text("R", font_size=17, color=GREY_B).next_to(y_axis, UP, buff=0.04)
+    panel = VGroup(frame, x_axis, y_axis, x_lab, y_lab)
+
+    def make_trace(sign):
+        pts = [pos + np.array([i * hw, (0.55 * i + sign * 0.34 * i * abs(i)) * hh,
+                               0]) for i in np.linspace(-1, 1, 48)]
+        tr = VMobject(color=ELECTRON, stroke_width=3)
+        tr.set_points_smoothly(pts)
+        return tr
+
+    return panel, make_trace
 
 
 def sparkle(pos, size=0.09, color=WHITE):
@@ -520,10 +562,29 @@ class HiddenGeometry(Scene):
         electron_glow = Circle(radius=0.2, color=ELECTRON, fill_opacity=0.25,
                               stroke_width=0)
         electron_glow.add_updater(lambda m: m.move_to(electron))
+        # Spin-momentum locking, the paper's mechanism: a spin arrow held
+        # rigidly perpendicular to the electron's direction of travel, so it
+        # swings around as the path bends.
+        spin = Arrow(ORIGIN, UP * 0.4, buff=0, color=ATOM_A, stroke_width=4,
+                     max_tip_length_to_length_ratio=0.45)
+        electron.prevpos = electron.get_center().copy()
+
+        def spin_upd(m, dt):
+            cur = electron.get_center()
+            v = cur - electron.prevpos
+            electron.prevpos = cur.copy()
+            n = np.linalg.norm(v)
+            d = v / n if n > 1e-4 else np.array([1.0, 0.0, 0.0])
+            perp = np.array([-d[1], d[0], 0])
+            m.put_start_and_end_on(cur, cur + 0.4 * perp)
+
+        spin.add_updater(spin_upd)
+        spin_key = Text("spin, locked to its motion", font_size=16,
+                        color=ATOM_A).to_corner(DL, buff=0.55)
         path = VMobject(stroke_width=2.5)
         path.set_points_as_corners([electron.get_center(), electron.get_center()])
         cap = self.swap(cap, cap5, FadeIn(electron), FadeIn(electron_glow),
-                        run_time=1)
+                        FadeIn(spin), FadeIn(spin_key), run_time=1)
 
         def trail_upd(m):
             m.add_points_as_corners([electron.get_center()])
@@ -547,8 +608,10 @@ class HiddenGeometry(Scene):
         self.wait_until(58.1)
         lattice.clear_updaters()
         gap_visual.clear_updaters()
+        spin.clear_updaters()
         self.play_t(FadeOut(lattice), FadeOut(gap_visual), FadeOut(electron),
-                    FadeOut(electron_glow), FadeOut(path), run_time=1.5)
+                    FadeOut(electron_glow), FadeOut(path), FadeOut(spin),
+                    FadeOut(spin_key), run_time=1.5)
         self._cap = cap   # crossfade into the next line, don't cut
 
     # ----------------------------------------------------------------
@@ -713,11 +776,23 @@ class HiddenGeometry(Scene):
         ])
         pulse = Circle(radius=0.3, color=GEO_B, stroke_width=3).move_to(
             solid_curve.get_center())
+        # A live instrument readout of the actual detection: resistance vs
+        # current. The dashed line is ordinary (ohmic) resistance; the solid
+        # trace bends away from it -- that field-dependent bend, nonlinear
+        # magnetoresistance, is the fingerprint the hidden geometry leaves.
+        panel, make_trace = nlmr_panel(pos=RIGHT * 3.95 + UP * 1.4)
+        straight = make_trace(0)
+        ref_line = DashedVMobject(straight, num_dashes=17)
+        ref_line.set_color(GREY_C).set_stroke(opacity=0.55)
+        nl_trace = make_trace(1)
+        ohm_tag = Text("ideal", font_size=13, color=GREY_C).next_to(
+            straight.point_from_proportion(0.74), UP, buff=0.05)
         cap = self.swap(cap, cap3, Transform(ghost, ghost_target),
                         FadeOut(board), FadeOut(tensor), FadeOut(labels),
                         FadeOut(dust), run_time=1.5)
         self.play_t(Transform(ghost, solid_curve), FadeIn(cglow2),
-                    FadeIn(data_pts, scale=1.5),
+                    FadeIn(data_pts, scale=1.5), FadeIn(panel),
+                    FadeIn(ref_line), FadeIn(ohm_tag), Create(nl_trace),
                     Broadcast(pulse, focal_point=solid_curve.get_center()),
                     run_time=2.5)
 
@@ -730,8 +805,13 @@ class HiddenGeometry(Scene):
         b_label = Text("B", font_size=20, color=GEO_B).next_to(b_arrow, UP,
                                                                buff=0.1)
         add_breathe(b_arrow, amp=0.05, speed=1.3)
+        # Name the two locked arrows so the mechanism reads.
+        legend = VGroup(
+            Text("→ momentum", font_size=15, color=GEO_B),
+            Text("→ spin, locked", font_size=15, color=ATOM_A),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.1).next_to(orbit, DOWN, buff=0.28)
         cap = self.swap(cap, cap4, FadeIn(orbit), FadeIn(b_arrow),
-                        FadeIn(b_label), run_time=1.5)
+                        FadeIn(b_label), FadeIn(legend), run_time=1.5)
         self.play_t(theta.animate.set_value(TAU * 1.4), run_time=4.5,
                     rate_func=linear)
 
@@ -762,8 +842,9 @@ class HiddenGeometry(Scene):
         b_arrow.clear_updaters()
         self.play_t(FadeOut(ghost), FadeOut(cglow2), FadeOut(data_pts),
                     FadeOut(orbit), FadeOut(b_arrow), FadeOut(b_label),
-                    FadeOut(ball2), FadeOut(ball2_glow), FadeOut(trail2),
-                    run_time=2)
+                    FadeOut(legend), FadeOut(panel), FadeOut(ref_line),
+                    FadeOut(nl_trace), FadeOut(ohm_tag), FadeOut(ball2),
+                    FadeOut(ball2_glow), FadeOut(trail2), run_time=2)
         self._cap = cap   # crossfade into "So maybe spacetime isn't just..."
 
     # ----------------------------------------------------------------
