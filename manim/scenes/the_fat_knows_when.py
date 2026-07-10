@@ -249,7 +249,11 @@ class TheFatKnowsWhen(Scene):
             self.t = t
 
     def swap(self, old, new, *extra, run_time=1.2):
-        self.play_t(FadeOut(old), FadeIn(new), *extra, run_time=run_time)
+        # Stagger the crossfade (old mostly gone before new arrives) with a
+        # small lift, so two captions never jumble on top of each other.
+        self.play_t(AnimationGroup(FadeOut(old, shift=UP * 0.15),
+                                   FadeIn(new, shift=UP * 0.15), lag_ratio=0.55),
+                    *extra, run_time=run_time)
         return new
 
     def enter_cap(self, new_cap, *extra, run_time=1.5):
