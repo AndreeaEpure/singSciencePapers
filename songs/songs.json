@@ -1,6 +1,21 @@
 {
   "songs": [
     {
+      "id": "the-fat-knows-when",
+      "title": "The Fat Knows When",
+      "hook": "We treated body fat like a passive savings account. Turns out every fat cell is listening—deciding, moment to moment, whether to hold on or let go.",
+      "paper": {
+        "title": "Mitochondrial calcium regulates lipid metabolism by modulating tethering of mitochondria to lipid droplets (Acín Pérez, Assali, Veliova et al., 2026, The EMBO Journal)",
+        "url": "https://doi.org/10.1038/s44318-026-00827-8"
+      },
+      "tags": ["biology", "metabolism", "cell biology"],
+      "video": "video.mp4",
+      "thumb": "thumb.jpg",
+      "duration": "4:27",
+      "lyrics": "lyrics.txt",
+      "story": "For most of us, body fat is a passive savings account: stack it up when there's plenty, spend it down when there isn't. But every fat cell turns out to be actively managed, deciding moment to moment whether to guard its fuel or give it up.\nInside the cell, the mitochondria—the powerhouses that turn fuel into energy—physically dock against droplets of stored fat. Whether they stay docked or pull away is set by a surprising signal: the level of calcium inside the mitochondria themselves, tuned by a molecular exchanger called NCLX. When that calcium rises, the mitochondria change shape and let go of the droplet, and only then can the enzymes move in to burn the fat. When it falls, they hold on, and the fat stays stored.\nSo burning fat isn't a switch on the fat, or on the engine—it's the conversation between them, a docking and undocking choreographed by a single ion. One little signal decides whether yesterday's dinner is kept or spent. The fat, it turns out, knows when."
+    },
+    {
       "id": "hidden-geometry",
       "title": "Hidden Geometry",
       "hook": "A property of electrons stayed purely theoretical for twenty years. Then someone found it hiding in ordinary materials.",
