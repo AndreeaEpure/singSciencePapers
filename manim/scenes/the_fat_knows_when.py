@@ -135,55 +135,97 @@ def add_flicker(mob, amp=0.14, speed=9.0):
 # Cell-biology building blocks
 # --------------------------------------------------------------------------
 
+def sphere3d(radius, color, pos=ORIGIN, light=(-0.5, 0.6, 0), layers=26):
+    """A fake-3D sphere: opaque concentric fills shaded from a dark rim to a
+    bright centre that is offset toward a light source, plus a specular
+    highlight. Reads as a lit ball rather than a flat disc."""
+    lu = np.array(light, dtype=float)
+    lu = lu / (np.linalg.norm(lu) + 1e-9)
+    dark = interpolate_color(ManimColor(color), ManimColor("#080808"), 0.62)
+    lite = interpolate_color(ManimColor(color), WHITE, 0.5)
+    g = VGroup()
+    for i in range(layers):
+        frac = i / (layers - 1)                 # 0 rim .. 1 centre
+        r = radius * (1 - 0.98 * frac)
+        off = lu * radius * frac * 0.55          # highlight rides toward light
+        col = interpolate_color(dark, lite, frac ** 0.85)
+        g.add(Circle(radius=max(r, 0.006), color=col, fill_opacity=1,
+                     stroke_width=0).move_to(pos + off))
+    g.add(Circle(radius=radius * 0.15, color=WHITE, fill_opacity=0.75,
+                 stroke_width=0).move_to(pos + lu * radius * 0.5))
+    g.add(Circle(radius=radius * 0.05, color=WHITE, fill_opacity=0.9,
+                 stroke_width=0).move_to(pos + lu * radius * 0.58))
+    return g
+
+
+def wobble3d(mob, amp=0.05, speed=1.1):
+    """A slow horizontal stretch oscillation -- fakes tumbling in depth."""
+    mob.wb_t = random.uniform(0, TAU)
+    mob.wb_prev = 1.0
+
+    def upd(m, dt):
+        m.wb_t += dt
+        target = 1 + amp * np.sin(speed * m.wb_t)
+        m.stretch(target / m.wb_prev, 0)
+        m.wb_prev = target
+
+    mob.add_updater(upd)
+
+
 def lipid_droplet(radius=1.0, color=FAT, pos=ORIGIN, glow=True):
-    """A golden droplet of stored fat: oily body, inner sheen, highlight."""
+    """A golden 3D droplet of stored fat: shaded sphere + warm halo."""
     parts = VGroup()
     if glow:
         parts.add(soft_blob(pos, radius * 1.55, color, peak=0.06, layers=14))
-    body = Circle(radius=radius, color=FAT_DEEP, fill_opacity=0.92,
-                  stroke_color=color, stroke_width=2.5).move_to(pos)
-    sheen = Circle(radius=radius * 0.72, color=color, fill_opacity=0.55,
-                   stroke_width=0).move_to(pos)
-    core = Circle(radius=radius * 0.4, color=FIRE_HOT, fill_opacity=0.25,
-                  stroke_width=0).move_to(pos)
-    highlight = Circle(radius=radius * 0.2, color=WHITE, fill_opacity=0.5,
-                       stroke_width=0).move_to(pos + radius * 0.42 * (UP + LEFT))
-    parts.add(body, sheen, core, highlight)
+    parts.add(sphere3d(radius, color, pos=pos,
+                       layers=28 if radius > 0.5 else 14))
     return parts
 
 
 def mitochondrion(w=1.7, h=0.95, color=MITO, pos=ORIGIN, glow=True):
-    """A bean-shaped powerhouse: double membrane + wavy internal cristae."""
+    """A 3D-shaded powerhouse: a top-lit capsule (dark base -> lit crown),
+    a membrane rim, a specular streak, and wavy internal cristae."""
     parts = VGroup()
     if glow:
         parts.add(soft_blob(pos, max(w, h) * 0.75, color, peak=0.05, layers=12))
-    outer = RoundedRectangle(width=w, height=h, corner_radius=h / 2,
-                             stroke_color=color, stroke_width=3,
-                             fill_color=MITO_DEEP, fill_opacity=0.3).move_to(pos)
-    inner = RoundedRectangle(width=w - 0.16, height=h - 0.16,
-                             corner_radius=(h - 0.16) / 2, stroke_color=color,
-                             stroke_width=1.4, stroke_opacity=0.6,
-                             fill_opacity=0).move_to(pos)
-    cristae = VGroup()
+    dark = interpolate_color(ManimColor(color), ManimColor("#0a0a0a"), 0.58)
+    lite = interpolate_color(ManimColor(color), WHITE, 0.32)
+    L = 14
+    for i in range(L):
+        frac = i / (L - 1)
+        ww = w * (1 - 0.12 * frac)
+        hh = h * (1 - 0.55 * frac)
+        off = UP * h * frac * 0.24                # lit crown toward the top
+        col = interpolate_color(dark, lite, frac ** 0.9)
+        parts.add(RoundedRectangle(width=max(ww, 0.05), height=max(hh, 0.03),
+                                   corner_radius=max(hh, 0.03) / 2,
+                                   fill_color=col, fill_opacity=1,
+                                   stroke_width=0).move_to(pos + off))
+    parts.add(RoundedRectangle(width=w, height=h, corner_radius=h / 2,
+                               stroke_color=interpolate_color(ManimColor(color),
+                                                              WHITE, 0.3),
+                               stroke_width=2.5, fill_opacity=0).move_to(pos))
     span = w / 2 - 0.3
-    for k, yoff in enumerate((0.15, -0.15)):
-        pts = [pos + np.array([x, yoff + 0.085 * np.sin(x * 7 + k * PI), 0])
+    cristae = VGroup()
+    ccol = interpolate_color(ManimColor(color), WHITE, 0.28)
+    for k, yoff in enumerate((0.13, -0.12)):
+        pts = [pos + np.array([x, yoff + 0.075 * np.sin(x * 7 + k * PI), 0])
                for x in np.linspace(-span, span, 44)]
-        line = VMobject(stroke_color=color, stroke_width=1.5,
-                        stroke_opacity=0.75)
+        line = VMobject(stroke_color=ccol, stroke_width=1.5, stroke_opacity=0.7)
         line.set_points_smoothly(pts)
         cristae.add(line)
-    parts.add(outer, inner, cristae)
+    parts.add(cristae)
+    parts.add(Ellipse(width=w * 0.52, height=h * 0.16, color=WHITE,
+                      fill_opacity=0.33, stroke_width=0).move_to(pos + UP * h * 0.29))
     return parts
 
 
 def calcium_dot(pos=ORIGIN, r=0.075):
-    """A bright calcium ion with a soft halo."""
+    """A bright calcium ion: a small 3D bead with a soft halo."""
     halo = Circle(radius=r * 2.4, color=CA, fill_opacity=0.22,
                   stroke_width=0).move_to(pos)
-    core = Dot(radius=r, color=CA).move_to(pos)
-    core.set_sheen(0.3, UL)
-    return VGroup(halo, core)
+    ball = sphere3d(r, CA, pos=pos, layers=10)
+    return VGroup(halo, ball)
 
 
 def flame_shape(color, h=1.0):
@@ -316,7 +358,19 @@ class TheFatKnowsWhen(Scene):
 
             dot.add_updater(upd)
             motes.add(dot)
-        self.add(nebulae, motes)
+
+        # Foreground depth-of-field: big, very soft out-of-focus blobs that
+        # drift across close to the "lens", selling the sense of depth.
+        bokeh = VGroup()
+        for _ in range(5):
+            b = soft_blob([random.uniform(-7, 7), random.uniform(-4, 4), 0],
+                          random.uniform(0.9, 1.7),
+                          random.choice([FAT, MITO, CA]), peak=0.05, layers=16)
+            b.drift = np.array([random.uniform(-0.07, 0.07),
+                                random.uniform(-0.035, 0.035), 0])
+            b.add_updater(lambda m, dt: m.shift(m.drift * dt))
+            bokeh.add(b)
+        self.add(nebulae, motes, bokeh)
 
     # ----------------------------------------------------------------
     def title_and_savings(self):
@@ -391,16 +445,23 @@ class TheFatKnowsWhen(Scene):
 
     # ----------------------------------------------------------------
     def engines_and_fuel(self):
-        droplet = self.droplet
+        old = self.droplet
+        old.clear_updaters()
         cap = self.cap_text("Deep inside, where the engines run—", 29)
-        # Shrink the droplet to one of several, and reveal the engines beside it.
+        # Camera push-in: fly through the droplet's surface, then the cell
+        # interior emerges from depth.
         self.wait_until(48.0)
         cap = self.enter_cap(cap, FadeOut(self.droplet_keyhole),
-                             droplet.animate.scale(0.8).move_to(LEFT * 1.2),
+                             old.animate.scale(3.0).set_opacity(0.0),
                              run_time=2.0)
+        self.remove(old)
+        droplet = lipid_droplet(radius=0.92, pos=LEFT * 1.2)
+        add_breathe(droplet, amp=0.02, speed=0.8)
+        self.play_t(FadeIn(droplet, scale=0.3), run_time=0.8)
 
         mito = mitochondrion(w=1.9, h=1.05, pos=RIGHT * 1.6 + UP * 0.1)
         add_breathe(mito, amp=0.025, speed=1.1)
+        wobble3d(mito, amp=0.05, speed=0.9)
         self.wait_until(56.0)
         cap2 = self.cap_text("tiny powerhouses—mitochondria—", 29)
         cap = self.swap(cap, cap2, FadeIn(mito, scale=0.7), run_time=1.5)
