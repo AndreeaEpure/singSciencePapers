@@ -1,6 +1,21 @@
 {
   "songs": [
     {
+      "id": "the-geometry-of-hidden-things",
+      "title": "The Geometry of Hidden Things",
+      "hook": "For two hundred years, thermodynamics just balanced its books. It turns out heat was quietly tracing a hidden geometry the whole time.",
+      "paper": {
+        "title": "Heat as a gauge connection (Bryan W. Roberts, 2025, arXiv:2503.08753)",
+        "url": "https://arxiv.org/abs/2503.08753"
+      },
+      "tags": ["physics", "thermodynamics", "geometry"],
+      "video": "video.mp4",
+      "thumb": "thumb.jpg",
+      "duration": "5:08",
+      "lyrics": "lyrics.txt",
+      "story": "For two hundred years, thermodynamics has run on bookkeeping: heat in, work out, the ledger always balancing, entropy only ever climbing. It worked so well that no one thought to ask whether the accounting was quietly hiding something.\nIt was. Treat heat not as a mere quantity but as a connection—the same kind of geometric object physicists use to describe forces—living over the space of a system's work configurations. When that connection is flat, you recover exactly the familiar thermodynamics: entropy and temperature exist, and heat is simply temperature times the change in entropy. But when it curves, something new surfaces: a thermal echo of the geometric phase from quantum mechanics, a hidden twist that the ordinary heat-and-work ledger can never show.\nIt's a marble whose shadow can never confess the colour inside it. The quantities we can see—the piston you push, the numbers you read—are only a projection of a richer structure underneath, and the same mathematics may describe a black hole and a steam engine alike. Not a new universe. A new way to see the old one."
+    },
+    {
       "id": "the-fat-knows-when",
       "title": "The Fat Knows When",
       "hook": "We treated body fat like a passive savings account. Turns out every fat cell is listening—deciding, moment to moment, whether to hold on or let go.",
