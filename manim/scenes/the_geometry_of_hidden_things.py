@@ -436,6 +436,19 @@ class TheGeometryOfHiddenThings(Scene):
         self.play_t(FadeOut(title), run_time=0.6)
         self._cap = cap
 
+        # Opening beat (~4-9s, sparse audio): faint fragments of two centuries
+        # of thermodynamic arithmetic drift up, so it isn't dead air.
+        frags = VGroup(*[
+            Text(s, font_size=sz, color=DIM).move_to(
+                [random.uniform(-5.2, 5.2), random.uniform(-2.7, -0.4), 0])
+            for s, sz in (("Q = W", 26), ("ΔU = Q − W", 24), ("dS = đQ / T", 24),
+                          ("PV = nRT", 26), ("η = 1 − Tc / Th", 22),
+                          ("W = ∮ P dV", 24), ("dU = T dS − P dV", 22))])
+        self.play_t(LaggedStart(*[FadeIn(fr, shift=UP * 0.3) for fr in frags],
+                    lag_ratio=0.18), run_time=2.8)
+        self.play_t(frags.animate.shift(UP * 0.4).set_opacity(0.22),
+                    run_time=1.4)
+
         # A ledger of heat = work: equal-sign fence posts across a landscape.
         ground, f = landscape([(-2.5, 0.5, 1.1), (1.8, -0.4, 1.0)],
                               x_range=(-6, 6), color=DIM, stroke_width=2)
@@ -445,7 +458,7 @@ class TheGeometryOfHiddenThings(Scene):
             posts.add(equals_post([x, f(x) - 1.2 + 0.35, 0]))
         self.wait_until(9.0)
         cap = self.swap(cap, self.cap_text("the arithmetic balanced.", 30),
-                        Create(ground), run_time=1.5)
+                        FadeOut(frags), Create(ground), run_time=1.5)
         self.play_t(LaggedStartMap(FadeIn, posts, lag_ratio=0.1, shift=UP * 0.2),
                     run_time=2.0)
 
@@ -494,7 +507,39 @@ class TheGeometryOfHiddenThings(Scene):
         cap = self.swap(cap, self.cap_text("long before the language to describe the country.", 25),
                         run_time=1.6)
         self.wait_until(47.0)
-        self.play_t(FadeOut(ground), grid.animate.set_opacity(0.08), run_time=1.5)
+        self.play_t(FadeOut(ground), grid.animate.set_stroke(opacity=0.18),
+                    run_time=1.5)
+
+        # Instrumental stretch (~48-62s): keep it moving. The freshly-arrived
+        # map comes alive -- a lone surveyor's dot traces the unnamed country
+        # while the flat grid warps into curved coordinates (the hidden
+        # geometry, quietly emerging).
+        survey = Dot(LEFT * 5.4 + DOWN * 1.2, color=COOL, radius=0.07)
+        sglow = Circle(radius=0.16, color=COOL, fill_opacity=0.3, stroke_width=0)
+        sglow.add_updater(lambda m: m.move_to(survey))
+        strail = trail_group(survey, color=HIDDEN, segments=22, radius=0.04)
+        self.play_t(FadeIn(survey), FadeIn(sglow), run_time=1.2)
+        self.add(strail)
+
+        def warp(p):
+            x, y, z = p
+            return np.array([x, y + 0.55 * np.exp(-((x + 1.5) ** 2) / 3.0)
+                             - 0.45 * np.exp(-((x - 2.2) ** 2) / 2.4), z])
+
+        self.play_t(grid.animate.apply_function(warp),
+                    survey.animate.move_to(LEFT * 1.4 + UP * 0.5),
+                    run_time=4.2, rate_func=smooth)
+        contour = Circle(radius=0.5, color=HIDDEN, stroke_width=2).move_to(
+            survey.get_center())
+        self.play_t(Broadcast(contour, focal_point=survey.get_center(), n_mobs=3),
+                    survey.animate.move_to(RIGHT * 1.8 + DOWN * 0.2),
+                    run_time=3.6, rate_func=linear)
+        self.play_t(survey.animate.move_to(RIGHT * 3.4 + UP * 0.3),
+                    run_time=2.8, rate_func=smooth)
+        strail.clear_updaters()
+        sglow.clear_updaters()
+        self.play_t(FadeOut(survey), FadeOut(sglow), FadeOut(strail),
+                    grid.animate.set_stroke(opacity=0.09), run_time=1.4)
         self.bg_grid = grid
         self._cap = cap
 
