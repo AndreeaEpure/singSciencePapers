@@ -143,10 +143,43 @@ def flame_shape(color, h=1.0):
 
 
 def flame(scale=1.0, pos=ORIGIN):
+    """Layered flame with a hot core, outer tongues, and ember wisps."""
+    glow = soft_blob(ORIGIN, 0.9 * scale, HEAT, peak=0.09, layers=16)
+    halo = soft_blob(ORIGIN, 0.55 * scale, FIRE_HOT, peak=0.13, layers=10)
+
     outer = flame_shape(HEAT, h=1.0 * scale)
-    inner = flame_shape(FIRE_HOT, h=0.58 * scale).shift(DOWN * 0.05 * scale)
-    glow = soft_blob(ORIGIN, 0.8 * scale, HEAT, peak=0.08, layers=12)
-    return VGroup(glow, outer, inner).move_to(pos)
+    outer.stretch(1.08, 0)
+    outer.stretch(1.10, 1)
+
+    inner = flame_shape(FIRE_HOT, h=0.60 * scale).shift(DOWN * 0.03 * scale)
+    inner.stretch(0.86, 0)
+    inner.stretch(0.92, 1)
+
+    core = Circle(radius=0.11 * scale, color=WHITE, fill_opacity=0.85,
+                  stroke_width=0).move_to(DOWN * 0.06 * scale)
+    core2 = Circle(radius=0.20 * scale, color=FIRE_HOT, fill_opacity=0.45,
+                   stroke_width=0).move_to(DOWN * 0.04 * scale)
+
+    wisps = VGroup()
+    for dx, dy, r in (
+        (-0.20, 0.22, 0.05),
+        (0.18, 0.34, 0.045),
+        (-0.34, 0.08, 0.04),
+        (0.30, 0.16, 0.038),
+    ):
+        wisps.add(Circle(radius=r * scale, color=FIRE_HOT, fill_opacity=0.34,
+                         stroke_width=0).move_to(np.array([dx * scale, dy * scale, 0])))
+
+    embers = VGroup()
+    for dx, dy, rr in (
+        (-0.18, -0.10, 0.025),
+        (0.16, -0.14, 0.022),
+        (-0.04, -0.22, 0.018),
+    ):
+        embers.add(Circle(radius=rr * scale, color=HEAT, fill_opacity=0.55,
+                          stroke_width=0).move_to(np.array([dx * scale, dy * scale, 0])))
+
+    return VGroup(glow, halo, outer, inner, wisps, embers, core2, core).move_to(pos)
 
 
 def add_drift(mob, amp=0.06, speed=1.0):
@@ -244,17 +277,40 @@ def fibre_bundle(base_y=-1.7, x_range=(-4.2, 4.2), n=11, fibre_h=1.5,
 def piston(pos=ORIGIN, extend=0.0):
     """A simple cylinder + sliding head + rod. `extend` in [0,1] slides the
     head out to the right. Returns (group, head, rod)."""
-    body = RoundedRectangle(width=1.5, height=0.8, corner_radius=0.08,
-                            stroke_color=STEEL, stroke_width=2.5,
-                            fill_color="#14140f", fill_opacity=0.85)
-    hx = -0.3 + extend * 0.55
-    head = RoundedRectangle(width=0.42, height=0.66, corner_radius=0.06,
+    body = RoundedRectangle(width=1.8, height=0.96, corner_radius=0.10,
+                            stroke_color=STEEL, stroke_width=2.7,
+                            fill_color="#11130f", fill_opacity=0.92)
+    body_inner = RoundedRectangle(width=1.58, height=0.74, corner_radius=0.07,
+                                  stroke_color="#2f3540", stroke_width=1.2,
+                                  fill_color="#191c16", fill_opacity=1)
+    body_inner.move_to(body)
+
+    # Head and rod sit inside a darker chamber with small mechanical accents.
+    hx = -0.36 + extend * 0.58
+    head = RoundedRectangle(width=0.48, height=0.72, corner_radius=0.06,
                             fill_color=WORK, fill_opacity=1,
-                            stroke_width=0).move_to([hx, 0, 0])
-    rod = Line([hx + 0.21, 0, 0], [1.5, 0, 0], stroke_color=STEEL,
-               stroke_width=6)
-    knob = Dot([1.5, 0, 0], radius=0.09, color=WORK)
-    grp = VGroup(body, head, rod, knob).move_to(pos)
+                            stroke_color=interpolate_color(ManimColor(WORK), WHITE, 0.25),
+                            stroke_width=1.4).move_to([hx, 0, 0])
+    head_band = Rectangle(width=0.48, height=0.12, stroke_width=0,
+                          fill_color="#8a6c2f", fill_opacity=0.95).move_to([hx, 0.20, 0])
+    head_band2 = head_band.copy().move_to([hx, -0.20, 0])
+
+    rod = Line([hx + 0.24, 0, 0], [1.72, 0, 0], stroke_color=STEEL,
+               stroke_width=6.5)
+    rod2 = Line([hx + 0.24, 0, 0], [1.72, 0, 0], stroke_color="#5f6876",
+                stroke_width=2.2)
+    knob = Circle(radius=0.11, color=WORK, fill_opacity=1, stroke_width=1.1,
+                  stroke_color=interpolate_color(ManimColor(WORK), WHITE, 0.2)
+                  ).move_to([1.78, 0, 0])
+    crank = Circle(radius=0.20, color="#d6d0bc", fill_opacity=0.0,
+                   stroke_width=2.0, stroke_color=STEEL).move_to([1.62, 0, 0])
+    port = Dot([-0.56, 0, 0], radius=0.05, color="#606873")
+    bolts = VGroup(*[
+        Dot(p, radius=0.02, color="#7f8793")
+        for p in ([[-0.73, 0.33, 0], [-0.73, -0.33, 0], [0.73, 0.33, 0], [0.73, -0.33, 0]])
+    ])
+    grp = VGroup(body, body_inner, port, bolts, head, head_band, head_band2,
+                 rod, rod2, crank, knob).move_to(pos)
     return grp, head, rod
 
 
@@ -265,6 +321,12 @@ def equals_post(pos, color=WORK):
     top.shift(UP * 0.09)
     bot.shift(DOWN * 0.09)
     return VGroup(top, bot).move_to(pos)
+
+
+def bproj(u, v, h=0.0, cx=-1.4, base_y=-1.4):
+    """Oblique 3D->2D projection of a base point (u,v) at fibre height h,
+    for drawing the gauge bundle in perspective."""
+    return np.array([cx + u + 0.42 * v, base_y + 0.34 * v + h, 0.0])
 
 
 class TheGeometryOfHiddenThings(Scene):
@@ -321,22 +383,23 @@ class TheGeometryOfHiddenThings(Scene):
             (np.array([5.0, 2.0, 0]), 4.2, HIDDEN),
             (np.array([2.6, -2.6, 0]), 2.6, WORK),
             (np.array([-3.2, 2.6, 0]), 2.6, GEO),
+            (np.array([0.0, 0.0, 0]), 5.8, DIM),
         ):
-            blob = soft_blob(pos, r, col, peak=0.045)
+            blob = soft_blob(pos, r, col, peak=0.03, layers=30)
             blob.drift = np.array([random.uniform(-0.02, 0.02),
                                    random.uniform(-0.012, 0.012), 0])
             blob.add_updater(lambda m, dt: m.shift(m.drift * dt))
             nebulae.add(blob)
 
         motes = VGroup()
-        for _ in range(30):
+        for _ in range(54):
             depth = random.random()
             dot = Circle(radius=0.018 + 0.05 * depth,
                         color=random.choice([HEAT, HIDDEN, COOL, DIM]),
                         fill_opacity=0.05 + 0.12 * depth, stroke_width=0)
             dot.move_to([random.uniform(-7, 7), random.uniform(-4.2, 4.2), 0])
-            dot.drift = np.array([random.uniform(-0.05, 0.05),
-                                  0.02 + 0.07 * depth, 0])
+            dot.drift = np.array([random.uniform(-0.04, 0.04),
+                                  0.015 + 0.055 * depth, 0])
 
             def upd(m, dt):
                 m.shift(m.drift * dt)
@@ -347,11 +410,11 @@ class TheGeometryOfHiddenThings(Scene):
             motes.add(dot)
 
         bokeh = VGroup()
-        for _ in range(4):
+        for _ in range(7):
             b = soft_blob([random.uniform(-7, 7), random.uniform(-4, 4), 0],
                           random.uniform(0.9, 1.6),
                           random.choice([HEAT, HIDDEN, COOL]), peak=0.05,
-                          layers=16)
+                          layers=20)
             b.drift = np.array([random.uniform(-0.06, 0.06),
                                 random.uniform(-0.03, 0.03), 0])
             b.add_updater(lambda m, dt: m.shift(m.drift * dt))
@@ -550,174 +613,262 @@ class TheGeometryOfHiddenThings(Scene):
     def work_and_heat(self):
         self.wait_until(131.0)
         cap = self.cap_text("Work shakes your hand.", 29)
-        eng, head, rod = piston(pos=LEFT * 3 + UP * 0.3)
+        eng, head, rod = piston(pos=LEFT * 3.6 + UP * 0.7)
+        eng.scale(0.82)
         cap = self.enter_cap(cap, FadeIn(eng, shift=RIGHT * 0.3), run_time=1.5)
-        self.play_t(head.animate.shift(RIGHT * 0.4), rod.animate.shift(RIGHT * 0.4),
+        self.play_t(head.animate.shift(RIGHT * 0.34), rod.animate.shift(RIGHT * 0.34),
                     run_time=0.6)
-        self.play_t(head.animate.shift(LEFT * 0.4), rod.animate.shift(LEFT * 0.4),
+        self.play_t(head.animate.shift(LEFT * 0.34), rod.animate.shift(LEFT * 0.34),
                     run_time=0.6)
+
+        # A P-V diagram: work is exactly the area the cycle encloses.
+        axes = Axes(x_range=[0, 4, 1], y_range=[0, 4, 1], x_length=3.3,
+                    y_length=2.5, axis_config={"stroke_color": STEEL,
+                    "stroke_width": 2, "include_ticks": False, "include_tip": True})
+        axes.move_to(RIGHT * 3.0 + DOWN * 0.3)
+        vlab = Text("V", font_size=20, color=STEEL).next_to(axes.x_axis.get_end(),
+                                                            DR, buff=0.06)
+        plab = Text("P", font_size=20, color=STEEL).next_to(axes.y_axis.get_end(),
+                                                            UL, buff=0.06)
 
         self.wait_until(135.0)
         cap2 = self.cap_text("Heat... leaves fingerprints.", 29)
-        # Heat = a diffuse cloud of warm specks spreading on the right.
-        heat_cloud = VGroup(*[Dot(RIGHT * 3 + UP * 0.3
-                                  + np.array([random.uniform(-0.3, 0.3),
-                                              random.uniform(-0.3, 0.3), 0]),
-                                  radius=random.uniform(0.03, 0.07), color=HEAT)
-                              for _ in range(24)])
-        cap = self.swap(cap, cap2, FadeIn(heat_cloud, scale=0.4), run_time=1.5)
-        self.play_t(*[d.animate.shift(np.array([random.uniform(-0.8, 0.9),
-                                                random.uniform(-0.6, 0.6), 0]))
+        heat_cloud = VGroup(*[Dot(eng.get_center()
+                              + np.array([random.uniform(-0.3, 0.3),
+                                          random.uniform(-0.55, -0.15), 0]),
+                              radius=random.uniform(0.03, 0.07), color=HEAT)
+                              for _ in range(22)])
+        cap = self.swap(cap, cap2, FadeIn(axes), FadeIn(vlab), FadeIn(plab),
+                        FadeIn(heat_cloud, scale=0.4), run_time=1.5)
+        self.play_t(*[d.animate.shift(np.array([random.uniform(-0.7, 0.8),
+                                                random.uniform(-0.5, 0.5), 0]))
                       .set_opacity(random.uniform(0.3, 0.7))
                       for d in heat_cloud], run_time=1.5)
 
         self.wait_until(139.0)
+        cyc = ParametricFunction(
+            lambda t: axes.c2p(2 + 1.15 * np.cos(t), 2 + 0.95 * np.sin(t)),
+            t_range=[0, TAU], color=WORK, stroke_width=3)
         cap = self.swap(cap, self.cap_text("One can move a piston.", 29),
                         Indicate(eng, color=WORK, scale_factor=1.08), run_time=1.5)
+        self.play_t(Create(cyc), run_time=1.4)
+
         self.wait_until(143.0)
+        area = cyc.copy().set_fill(WORK, 0.16).set_stroke(width=0)
+        wlbl = Text("work = ∮ P dV", font_size=22, color=WORK).next_to(axes, DOWN,
+                                                                      buff=0.2)
         cap = self.swap(cap, self.cap_text("The other slips quietly through every bargain nature made.", 23),
-                        heat_cloud.animate.set_opacity(0.4), run_time=1.6)
+                        heat_cloud.animate.set_opacity(0.4), FadeIn(area),
+                        FadeIn(wlbl), run_time=1.6)
 
         self.wait_until(149.0)
         cap2 = self.cap_text("Different voices...", 30)
-        # Both connect down to one shared hidden structure.
-        hub = Dot(DOWN * 1.8, radius=0.09, color=HIDDEN)
-        l1 = Line(eng.get_bottom(), hub.get_center(), color=HIDDEN,
-                  stroke_width=1.5, stroke_opacity=0.5)
-        l2 = Line(RIGHT * 3 + UP * 0.1, hub.get_center(), color=HIDDEN,
-                  stroke_width=1.5, stroke_opacity=0.5)
-        cap = self.swap(cap, cap2, FadeIn(hub), Create(l1), Create(l2),
-                        run_time=1.6)
+        dW = Text("đW", font_size=28, color=WORK).move_to(LEFT * 3.6 + DOWN * 1.7)
+        dQ = Text("đQ", font_size=28, color=HEAT).next_to(dW, RIGHT, buff=0.55)
+        cap = self.swap(cap, cap2, FadeIn(dW, shift=UP * 0.2),
+                        FadeIn(dQ, shift=UP * 0.2), run_time=1.6)
+
         self.wait_until(153.0)
+        # ...but they sum to a state function: đQ + đW = dU.
+        ident = Text("đQ + đW = dU", font_size=28, color=INK).move_to(
+            LEFT * 3.6 + DOWN * 1.7)
         cap = self.swap(cap, self.cap_text("Same conversation.", 30),
-                        Indicate(hub, color=HIDDEN, scale_factor=1.8), run_time=1.5)
+                        ReplacementTransform(VGroup(dW, dQ), ident), run_time=1.5)
         self.wait_until(157.0)
-        self.play_t(FadeOut(eng), FadeOut(heat_cloud), FadeOut(hub),
-                    FadeOut(l1), FadeOut(l2), run_time=1.4)
+        self.play_t(FadeOut(eng), FadeOut(heat_cloud), FadeOut(axes),
+                    FadeOut(vlab), FadeOut(plab), FadeOut(cyc), FadeOut(area),
+                    FadeOut(wlbl), FadeOut(ident), run_time=1.4)
         self._cap = cap
 
     # ----------------------------------------------------------------
     def gauge_theory(self):
+        # 3b1b-style construction: a bundle over work-configuration space, a
+        # closed base cycle whose lift does NOT close (the net heat = holonomy
+        # = curvature over the enclosed area, by Stokes).
+        R, KA = 1.7, 1.15 / TAU
+
         self.wait_until(157.2)
         cap = self.cap_text("Gauge theory.   Funny phrase.", 28)
-        bundle = fibre_bundle()
-        cap = self.enter_cap(cap, FadeIn(bundle, shift=UP * 0.2), run_time=1.8)
+        # Base space: a disk of work configurations, in perspective.
+        base_disk = VGroup()
+        for rr in np.linspace(0.55, R + 0.35, 4):
+            base_disk.add(ParametricFunction(
+                lambda t, rr=rr: bproj(rr * np.cos(t), rr * np.sin(t)),
+                t_range=[0, TAU], color=DIM, stroke_width=1, stroke_opacity=0.32))
+        for a in np.linspace(0, TAU, 8, endpoint=False):
+            base_disk.add(Line(bproj(0, 0), bproj((R + 0.35) * np.cos(a),
+                          (R + 0.35) * np.sin(a)), color=DIM, stroke_width=1,
+                          stroke_opacity=0.28))
+        base_lbl = Text("work configurations", font_size=20, color=WORK).move_to(
+            bproj(0, -R - 0.55) + DOWN * 0.15)
+        cap = self.enter_cap(cap, Create(base_disk), FadeIn(base_lbl),
+                             run_time=1.8)
 
         self.wait_until(161.1)
-        cap = self.swap(cap, self.cap_text("Sounds like something you'd borrow from an old mechanic.", 23),
-                        run_time=1.6)
+        cap2 = self.cap_text("Sounds like something you'd borrow from an old mechanic.", 23)
+        # Fibres rise from the base -- the hidden heat coordinate.
+        fibres = VGroup(*[
+            Line(bproj(R * np.cos(a), R * np.sin(a), 0),
+                 bproj(R * np.cos(a), R * np.sin(a), 1.55), color=HIDDEN,
+                 stroke_width=1.4, stroke_opacity=0.4)
+            for a in np.linspace(0, TAU, 10, endpoint=False)])
+        loop = ParametricFunction(lambda t: bproj(R * np.cos(t), R * np.sin(t)),
+                                  t_range=[0, TAU], color=WORK, stroke_width=4)
+        cap = self.swap(cap, cap2, LaggedStart(*[
+                        GrowFromPoint(f, bproj(0, 0)) for f in fibres],
+                        lag_ratio=0.05), run_time=1.6)
+        self.play_t(Create(loop), run_time=1.0)
 
         self.wait_until(165.7)
         cap2 = self.cap_text("It's how physicists keep track of things that refuse to stand still.", 22)
-        # Parallel transport: a vector rides a loop on the base and comes back
-        # ROTATED -- the curvature / hidden thermal phase (holonomy).
-        base_y = -1.7
-        loop = Rectangle(width=3.4, height=1.3, color=WORK, stroke_width=2.5)
-        loop.move_to([0, base_y + 0.65, 0])
-        vbase = np.array([0, 0.7, 0])
-        start_pt = loop.point_from_proportion(0)
-        vec = Arrow(start_pt, start_pt + vbase, buff=0, color=HEAT,
-                    stroke_width=5, max_tip_length_to_length_ratio=0.35)
-        ghost = vec.copy().set_color(DIM).set_opacity(0.5)
-        cap = self.swap(cap, cap2, Create(loop), FadeIn(ghost), FadeIn(vec),
-                        run_time=1.8)
-        # Parallel transport: carry the vector around the loop, turning it as it
-        # goes; it returns ROTATED -- the curvature / hidden thermal phase.
-        tp = ValueTracker(0)
-
-        def vec_upd(m):
-            a = tp.get_value()
-            pt = loop.point_from_proportion(a)
-            m.put_start_and_end_on(pt, pt + rotate_vector(vbase, -TAU * 0.25 * a))
-
-        vec.add_updater(vec_upd)
-        self.play_t(tp.animate.set_value(1), run_time=3.5, rate_func=linear)
-        vec.clear_updaters()
+        start_dot = Dot(bproj(R, 0, 0), color=WORK, radius=0.08)
+        th = ValueTracker(0.0)
+        lift = always_redraw(lambda: ParametricFunction(
+            lambda t: bproj(R * np.cos(t), R * np.sin(t), KA * t),
+            t_range=[0, max(1e-3, th.get_value())], color=HEAT, stroke_width=4))
+        bead = always_redraw(lambda: Dot(
+            bproj(R * np.cos(th.get_value()), R * np.sin(th.get_value()),
+                  KA * th.get_value()), color=HEAT, radius=0.09))
+        cap = self.swap(cap, cap2, FadeIn(start_dot), run_time=1.4)
+        self.add(lift, bead)
+        self.play_t(th.animate.set_value(TAU), run_time=3.6,
+                    rate_func=rate_functions.ease_in_out_sine)
+        # Freeze the lifted path and the endpoint that came back higher.
+        lift_static = ParametricFunction(
+            lambda t: bproj(R * np.cos(t), R * np.sin(t), KA * t),
+            t_range=[0, TAU], color=HEAT, stroke_width=4)
+        end_dot = Dot(bproj(R, 0, KA * TAU), color=HEAT, radius=0.09)
+        self.remove(lift, bead)
+        self.add(lift_static, end_dot)
 
         self.wait_until(172.7)
         cap2 = self.cap_text("Maybe the universe has never hidden its secrets.", 25)
-        # The transported vector (rotated) no longer matches the ghost original.
-        cap = self.swap(cap, cap2, Indicate(vec, color=HEAT),
-                        Indicate(ghost, color=DIM), run_time=1.8)
+        # The gap that didn't close -- the holonomy, the net heat.
+        gap = DashedLine(bproj(R, 0, 0), bproj(R, 0, KA * TAU), color=WHITE,
+                         stroke_width=3)
+        brace = Brace(gap, direction=RIGHT, color=INK)
+        hol = Text("∮ đQ", font_size=32, color=HEAT).next_to(brace, RIGHT, buff=0.14)
+        hol_sub = Text("=  net heat  (holonomy)", font_size=20, color=INK).next_to(
+            hol, RIGHT, buff=0.18)
+        cap = self.swap(cap, cap2, Create(gap), GrowFromCenter(brace),
+                        FadeIn(hol), FadeIn(hol_sub), run_time=1.8)
 
         self.wait_until(176.3)
         cap2 = self.cap_text("Maybe we've been reading the shadow...", 27)
-        # Object (3D marble) vs its shadow (flat disc).
-        obj = sphere3d(0.55, HIDDEN, pos=LEFT * 3.2 + UP * 0.3, layers=20)
-        shad = Ellipse(width=1.1, height=0.3, color=SHADOW, fill_opacity=0.8,
-                       stroke_width=0).move_to(LEFT * 3.2 + DOWN * 1.5)
-        cap = self.swap(cap, cap2, FadeOut(loop), FadeOut(vec), FadeOut(ghost),
-                        FadeOut(bundle), FadeIn(obj), FadeIn(shad), run_time=1.8)
+        # The base loop IS the shadow of the lifted path: it closes, hiding the
+        # gap. Drop projection lines from the object (lift) to its shadow (loop).
+        drops = VGroup(*[
+            DashedLine(bproj(R * np.cos(a), R * np.sin(a), KA * a),
+                       bproj(R * np.cos(a), R * np.sin(a), 0), color=STEEL,
+                       stroke_width=1.2, stroke_opacity=0.5)
+            for a in np.linspace(0.3, TAU - 0.2, 7)])
+        shadow_lbl = Text("the shadow (loop) closes", font_size=19,
+                          color=STEEL).to_edge(RIGHT, buff=0.7).shift(UP * 0.5)
+        cap = self.swap(cap, cap2, LaggedStart(*[Create(d) for d in drops],
+                        lag_ratio=0.1), Indicate(loop, color=WORK),
+                        FadeIn(shadow_lbl), run_time=1.8)
+
         self.wait_until(180.0)
+        obj_lbl = Text("the object (lift) does not", font_size=19,
+                       color=HEAT).next_to(shadow_lbl, DOWN, buff=0.22).align_to(
+            shadow_lbl, LEFT)
         cap = self.swap(cap, self.cap_text("instead of the object.", 29),
-                        Indicate(obj, color=HIDDEN, scale_factor=1.2), run_time=1.6)
+                        Indicate(lift_static, color=HEAT), FadeIn(obj_lbl),
+                        run_time=1.6)
 
         self.wait_until(185.0)
-        cap = self.swap(cap, self.cap_text("Alright...   alright...   alright...", 29),
-                        run_time=1.5)
+        cap2 = self.cap_text("Alright...   alright...   alright...", 29)
+        # Stokes: the gap equals the curvature over the enclosed area.
+        area = ParametricFunction(lambda t: bproj(R * np.cos(t), R * np.sin(t)),
+                                  t_range=[0, TAU], color=HIDDEN)
+        area.set_fill(HIDDEN, opacity=0.16).set_stroke(width=0)
+        stokes = Text("=  ∬ F   (curvature)", font_size=22, color=HIDDEN).next_to(
+            hol_sub, DOWN, buff=0.25).align_to(hol_sub, LEFT)
+        cap = self.swap(cap, cap2, FadeIn(area), FadeIn(stokes), run_time=1.5)
+        bundle = VGroup(base_disk, base_lbl, fibres, loop, start_dot, end_dot,
+                        lift_static, gap, brace, hol, hol_sub, drops, shadow_lbl,
+                        obj_lbl, area, stokes)
+
         self.wait_until(191.0)
-        self.play_t(FadeOut(obj), FadeOut(shad), run_time=1.5)
+        self.play_t(FadeOut(bundle), run_time=1.5)
         self._cap = cap
 
     # ----------------------------------------------------------------
     def entropy_perspective(self):
         self.wait_until(195.0)
         cap = self.cap_text("Entropy...", 31)
-        # A cloud of scattered points -- looks like chaos up close.
-        pts = VGroup(*[Dot([random.uniform(-3.2, 3.2), random.uniform(-2.2, 1.6), 0],
-                           radius=0.05, color=random.choice([HEAT, COOL, DIM]))
-                       for _ in range(60)])
-        cap = self.enter_cap(cap, LaggedStartMap(FadeIn, pts, lag_ratio=0.01),
-                             run_time=1.8)
+        # Microstates scattered on axes -- from close up, noise.
+        axes = Axes(x_range=[-3.4, 3.4, 1], y_range=[0, 2.4, 1], x_length=7.2,
+                    y_length=2.6, axis_config={"stroke_color": DIM,
+                    "stroke_width": 1.5, "include_ticks": False,
+                    "include_tip": False})
+        axes.move_to(DOWN * 0.5)
+
+        def macro(x):
+            return 1.9 * np.exp(-(x ** 2) / 2.2)
+
+        pts = VGroup()
+        for _ in range(70):
+            x = random.uniform(-3.2, 3.2)
+            y = max(0.03, macro(x) + random.uniform(-0.85, 0.85))
+            pts.add(Dot(axes.c2p(x, y), radius=0.05,
+                        color=random.choice([HEAT, COOL, DIM])))
+        cap = self.enter_cap(cap, FadeIn(axes),
+                             LaggedStart(*[FadeIn(p) for p in pts],
+                                         lag_ratio=0.01), run_time=1.8)
 
         self.wait_until(199.0)
         cap = self.swap(cap, self.cap_text("Perhaps it was never disorder.", 29),
                         run_time=1.5)
         self.wait_until(204.0)
+        slabel = Text("S = k log W", font_size=24, color=INK).to_corner(UR, buff=0.9)
         cap = self.swap(cap, self.cap_text("Perhaps... it's perspective.", 29),
-                        run_time=1.5)
+                        FadeIn(slabel), run_time=1.5)
 
         self.wait_until(209.0)
         cap = self.swap(cap, self.cap_text("Stand too close...", 30),
-                        pts.animate.scale(1.6), run_time=1.6)
+                        pts.animate.scale(1.5), run_time=1.6)
         self.wait_until(214.5)
         cap = self.swap(cap, self.cap_text("Life looks like chaos.", 29), run_time=1.4)
 
         self.wait_until(218.0)
         cap2 = self.cap_text("Step back...", 30)
-        # Step back: the points snap onto a smooth curve -- order from distance.
-        _, gf = landscape([(-2, 0.7, 0.9), (1.5, -0.6, 0.8)], color=GEO)
-        targets = np.linspace(-3.4, 3.4, len(pts))
-        cap = self.swap(cap, cap2, pts.animate.scale(0.55), run_time=1.5)
-        self.play_t(*[p.animate.move_to([x, gf(x) - 0.2, 0]).set_color(GEO)
-                      for p, x in zip(pts, targets)], run_time=2.0)
+        # Step back: microstates snap onto the smooth macrostate distribution.
+        cap = self.swap(cap, cap2, pts.animate.scale(1 / 1.5), run_time=1.2)
+        xs = np.linspace(-3.2, 3.2, len(pts))
+        self.play_t(*[p.animate.move_to(axes.c2p(x, macro(x))).set_color(GEO)
+                      for p, x in zip(pts, xs)], run_time=2.0)
 
         self.wait_until(221.0)
-        curve, _ = landscape([(-2, 0.7, 0.9), (1.5, -0.6, 0.8)], color=GEO,
-                             stroke_width=3)
-        curve.shift(DOWN * 0.2)
+        curve = axes.plot(macro, x_range=[-3.2, 3.2], color=GEO, stroke_width=3)
         cap = self.swap(cap, self.cap_text("Geometry begins to rhyme.", 28),
                         Create(curve), run_time=1.6)
 
         self.wait_until(227.9)
         cap2 = self.cap_text("Even a black hole...", 29)
-        # Black hole (left) and steam engine (right), same curve between them.
-        hole = VGroup(soft_blob(LEFT * 3.4 + DOWN * 0.3, 0.8, HIDDEN, peak=0.14,
+        # Two systems, one entropy geometry: black hole S=A/4, engine dS=đQ/T.
+        hole = VGroup(soft_blob(LEFT * 3.6 + DOWN * 0.3, 0.7, HIDDEN, peak=0.14,
                                 layers=14),
-                      Circle(radius=0.35, color=BLACK, fill_opacity=1,
+                      Circle(radius=0.32, color=BLACK, fill_opacity=1,
                              stroke_color=HIDDEN, stroke_width=2)
-                      .move_to(LEFT * 3.4 + DOWN * 0.3))
-        eng, _, _ = piston(pos=RIGHT * 3.4 + DOWN * 0.3)
-        cap = self.swap(cap, cap2, FadeOut(pts), FadeOut(curve),
-                        FadeIn(hole, scale=0.5), run_time=1.6)
+                      .move_to(LEFT * 3.6 + DOWN * 0.3))
+        bh_law = Text("S = A / 4", font_size=20, color=HIDDEN).move_to(
+            LEFT * 3.6 + DOWN * 1.55)
+        cap = self.swap(cap, cap2, FadeOut(pts), FadeOut(curve), FadeOut(axes),
+                        FadeOut(slabel), FadeIn(hole, scale=0.5), FadeIn(bh_law),
+                        run_time=1.6)
         self.wait_until(231.0)
         cap2 = self.cap_text("might be speaking the very same language as a steam engine.", 22)
-        link = DashedLine(LEFT * 2.8 + DOWN * 0.3, RIGHT * 2.6 + DOWN * 0.3,
-                          color=GEO, stroke_width=2)
-        cap = self.swap(cap, cap2, FadeIn(eng, shift=LEFT * 0.3), Create(link),
-                        run_time=1.8)
+        eng, _, _ = piston(pos=RIGHT * 3.6 + DOWN * 0.3)
+        eng.scale(0.8)
+        eng_law = Text("dS = đQ / T", font_size=20, color=HEAT).move_to(
+            RIGHT * 3.6 + DOWN * 1.55)
+        link = Text("same geometry", font_size=20, color=GEO).move_to(DOWN * 0.35)
+        cap = self.swap(cap, cap2, FadeIn(eng, shift=LEFT * 0.3),
+                        FadeIn(eng_law), FadeIn(link), run_time=1.8)
         self.wait_until(238.0)
-        self.play_t(FadeOut(hole), FadeOut(eng), FadeOut(link), run_time=1.5)
+        self.play_t(FadeOut(hole), FadeOut(bh_law), FadeOut(eng),
+                    FadeOut(eng_law), FadeOut(link), run_time=1.5)
         self._cap = cap
 
     # ----------------------------------------------------------------
