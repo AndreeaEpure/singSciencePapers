@@ -26,7 +26,7 @@ import numpy as np
 from manim import *
 
 MP3 = (Path(__file__).resolve().parents[2] / "songs"
-       / "Everything Is Made of Tiny Things"
+       / "everything-is-made-of-tiny-things"
        / "ep 111 kids_ Everything Is Made of Tiny Things.mp3")
 
 BG = "#141a2e"
