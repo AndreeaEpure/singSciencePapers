@@ -1,6 +1,21 @@
 {
   "songs": [
     {
+      "id": "everything-is-made-of-tiny-things",
+      "title": "Everything Is Made of Tiny Things",
+      "hook": "Your hand is mostly empty space. Zoom way down and everything—every puppy, every pizza, every star—is built from the same tiny bricks: atoms.",
+      "paper": {
+        "title": "The Scattering of α and β Particles by Matter and the Structure of the Atom (Ernest Rutherford, 1911, Philosophical Magazine)",
+        "url": "https://doi.org/10.1080/14786440508637080"
+      },
+      "tags": ["physics", "atoms", "for kids"],
+      "video": "video.mp4",
+      "thumb": "thumb.jpg",
+      "duration": "4:30",
+      "lyrics": "lyrics.txt",
+      "story": "Hold up your hand. It feels solid, but it's mostly empty space. Zoom in far past dust and grains of sand and you reach another country—the world of atoms, the tiny bricks that everything is built from: every mountain, every tree, every puppy, every pizza, every fish in the sea.\nEach atom has a tiny, heavy centre called the nucleus, packed with protons and neutrons, with electrons around it. But not in neat little planet-like orbits—that's an old picture. They live in fuzzy clouds of maybe-here, maybe-there. And the nucleus is astonishingly small: blow an atom up to the size of a football stadium and the nucleus is a marble on the fifty-yard line. Almost all of you is elbow room. That mostly-empty atom with a tiny dense core is exactly what Rutherford discovered in 1911, firing particles at gold foil and watching a few bounce straight back.\nChange the number of protons and you change the element—hydrogen is light, gold shines, carbon is where life's story flows—the whole periodic table from one simple rule. You, your dog, the Moon: the same handful of building blocks, arranged into different poetry. And next time, up close, the rules of that tiny world get wonderfully strange."
+    },
+    {
       "id": "the-geometry-of-hidden-things",
       "title": "The Geometry of Hidden Things",
       "hook": "For two hundred years, thermodynamics just balanced its books. It turns out heat was quietly tracing a hidden geometry the whole time.",
